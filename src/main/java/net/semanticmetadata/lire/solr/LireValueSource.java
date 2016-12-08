@@ -69,7 +69,7 @@ public class LireValueSource extends ValueSource {
 
     /**
      * @param featureField the field of the feature used for sorting.
-     * @param hist
+     * @param hist the histogram in bytes.
      * @param maxDistance  the distance value returned if there is no distance calculation possible.
      */
     public LireValueSource(String featureField, byte[] hist, double maxDistance) {

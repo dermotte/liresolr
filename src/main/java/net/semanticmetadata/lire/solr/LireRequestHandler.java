@@ -42,12 +42,10 @@ package net.semanticmetadata.lire.solr;
 import net.semanticmetadata.lire.imageanalysis.features.GlobalFeature;
 import net.semanticmetadata.lire.imageanalysis.features.global.EdgeHistogram;
 import net.semanticmetadata.lire.indexers.hashing.BitSampling;
-import net.semanticmetadata.lire.searchers.SimpleResult;
 import net.semanticmetadata.lire.utils.ImageUtils;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.*;
-import org.apache.lucene.queryparser.xml.builders.BooleanQueryBuilder;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.params.SolrParams;
@@ -150,6 +148,8 @@ public class LireRequestHandler extends RequestHandlerBase {
             String paramField = "cl_ha";
             if (req.getParams().get("field") != null)
                 paramField = req.getParams().get("field");
+            // check singleton cache if the term stats can be cached.
+            HashTermStatistics.addToStatistics(searcher, paramField);
             GlobalFeature queryFeature = (GlobalFeature) FeatureRegistry.getClassForHashField(paramField).newInstance();
             rsp.add("QueryField", paramField);
             rsp.add("QueryFeature", queryFeature.getClass().getName());
@@ -160,7 +160,7 @@ public class LireRequestHandler extends RequestHandlerBase {
                 BinaryDocValues binaryValues = MultiDocValues.getBinaryValues(searcher.getIndexReader(), FeatureRegistry.getFeatureFieldName(paramField)); // ***  #
                 if (binaryValues == null)
                     System.err.println("Could not find the DocValues of the query document. Are they in the index?");
-                BytesRef bytesRef = new BytesRef();
+                BytesRef bytesRef;
                 bytesRef = binaryValues.get(hits.scoreDocs[0].doc);
 //                Document d = searcher.getIndexReader().document(hits.scoreDocs[0].doc);
 //                String histogramFieldName = paramField.replace("_ha", "_hi");
@@ -170,7 +170,7 @@ public class LireRequestHandler extends RequestHandlerBase {
                     paramRows = req.getParams().getInt("rows");
                 // Re-generating the hashes to save space (instead of storing them in the index)
                 int[] hashes = BitSampling.generateHashes(queryFeature.getFeatureVector());
-                List<Term> termFilter = createTermFilter(hashes, paramField);
+                List<Term> termFilter = createTermFilter(hashes, paramField, numberOfQueryTerms);
                 doSearch(req, rsp, searcher, paramField, paramRows, termFilter, createQuery(hashes, paramField, numberOfQueryTerms), queryFeature);
             } else {
                 rsp.add("Error", "Did not find an image with the given id " + req.getParams().get("id"));
@@ -222,6 +222,9 @@ public class LireRequestHandler extends RequestHandlerBase {
         String paramField = "cl_ha";
         if (req.getParams().get("field") != null)
             paramField = req.getParams().get("field");
+
+        HashTermStatistics.addToStatistics(req.getSearcher(), paramField);
+
         int paramRows = defaultNumberOfResults;
         if (params.get("rows") != null)
             paramRows = params.getInt("rows");
@@ -242,7 +245,7 @@ public class LireRequestHandler extends RequestHandlerBase {
             }
             feat.extract(img);
             hashes = BitSampling.generateHashes(feat.getFeatureVector());
-            termFilter = createTermFilter(hashes, paramField);
+            termFilter = createTermFilter(hashes, paramField, numberOfQueryTerms);
         } catch (Exception e) {
             rsp.add("Error", "Error reading image from URL: " + paramUrl + ": " + e.getMessage());
             e.printStackTrace();
@@ -314,6 +317,7 @@ public class LireRequestHandler extends RequestHandlerBase {
         String paramField = "cl_ha";
         if (req.getParams().get("field") != null)
             paramField = req.getParams().get("field");
+        HashTermStatistics.addToStatistics(req.getSearcher(), paramField); // caching the term statistics.
         int paramRows = defaultNumberOfResults;
         if (params.getInt("rows") != null)
             paramRows = params.getInt("rows");
@@ -322,7 +326,6 @@ public class LireRequestHandler extends RequestHandlerBase {
         // create boolean query:
 //        System.out.println("** Creating query.");
         LinkedList<Term> termFilter = new LinkedList<Term>();
-        BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
         for (int i = 0; i < hashStrings.length; i++) {
             // be aware that the hashFunctionsFileName of the field must match the one you put the hashes in before.
             hashStrings[i] = hashStrings[i].trim();
@@ -331,12 +334,6 @@ public class LireRequestHandler extends RequestHandlerBase {
 //                System.out.println("** " + field + ": " + hashes[i].trim());
             }
         }
-        Collections.shuffle(termFilter);
-        for (int k = 0; k < termFilter.size() * numberOfQueryTerms; k++) {
-            queryBuilder.add(new BooleanClause(new TermQuery(termFilter.get(k)), BooleanClause.Occur.SHOULD));
-        }
-        BooleanQuery query = queryBuilder.build();
-//        System.out.println("** Doing search.");
 
         // query feature
         GlobalFeature queryFeature = (GlobalFeature) FeatureRegistry.getClassForHashField(paramField).newInstance();
@@ -496,19 +493,31 @@ public class LireRequestHandler extends RequestHandlerBase {
         return statistics;
     }
 
+    /**
+     * Makes a Boolean query out of a list of hashes.
+     * @param hashes
+     * @param paramField
+     * @param size
+     * @return
+     */
     private BooleanQuery createQuery(int[] hashes, String paramField, double size) {
-        List<Integer> hList = new ArrayList<Integer>(hashes.length);
+        List<String> hList = new ArrayList<>(hashes.length);
+        // creates a list of terms.
         for (int i = 0; i < hashes.length; i++) {
-            hList.add(hashes[i]);
+            hList.add(Integer.toHexString(hashes[i]));
         }
-        Collections.shuffle(hList);
-        BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
-        int numHashes = (int) Math.min(hashes.length, Math.floor(hashes.length * size));
+        // uses our predetermined hash term stats object to sort the list
+        Collections.sort(hList, (o1, o2) -> HashTermStatistics.docFreq(paramField, o1) - HashTermStatistics.docFreq(paramField, o2));
+        // removing those with zero entries but leaving at least three.
+        while (HashTermStatistics.docFreq(paramField,hList.get(0))<1 && hList.size() > 3) hList.remove(0);
+        int numHashes = (int) Math.min(hList.size(), Math.floor(hashes.length * size));
         // a minimum of 3 hashes ...
         if (numHashes < 3) numHashes = 3;
+
+        BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
         for (int i = 0; i < numHashes; i++) {
             // be aware that the hashFunctionsFileName of the field must match the one you put the hashes in before.
-            queryBuilder.add(new BooleanClause(new TermQuery(new Term(paramField, Integer.toHexString(hashes[i]))), BooleanClause.Occur.SHOULD));
+            queryBuilder.add(new BooleanClause(new TermQuery(new Term(paramField, hList.get(i))), BooleanClause.Occur.SHOULD));
         }
         BooleanQuery query = queryBuilder.build();
         // this query is just for boosting the results with more matching hashes. We'd need to match it to all docs.
@@ -524,9 +533,21 @@ public class LireRequestHandler extends RequestHandlerBase {
      * @param paramField
      * @return
      */
-    private List<Term> createTermFilter(int[] hashes, String paramField) {
-        LinkedList<Term> termFilter = new LinkedList<Term>();
+    private List<Term> createTermFilter(int[] hashes, String paramField, double size) {
+        List<String> hList = new ArrayList<>(hashes.length);
+        // creates a list of terms.
         for (int i = 0; i < hashes.length; i++) {
+            hList.add(Integer.toHexString(hashes[i]));
+        }
+        // uses our predetermined hash term stats object to sort the list
+        Collections.sort(hList, (o1, o2) -> HashTermStatistics.docFreq(paramField, o1) - HashTermStatistics.docFreq(paramField, o2));
+        // removing those with zero entries but leaving at least three.
+        while (HashTermStatistics.docFreq(paramField,hList.get(0))<1 && hList.size() > 3) hList.remove(0);
+        int numHashes = (int) Math.min(hList.size(), Math.floor(hashes.length * size));
+        // a minimum of 3 hashes ...
+        if (numHashes < 3) numHashes = 3;
+        LinkedList<Term> termFilter = new LinkedList<Term>();
+        for (int i = 0; i < numHashes; i++) {
             // be aware that the hashFunctionsFileName of the field must match the one you put the hashes in before.
             termFilter.add(new Term(paramField, Integer.toHexString(hashes[i])));
         }

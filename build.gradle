@@ -2,15 +2,10 @@
 This is the GRADLE build file for LIRE.
  */
 apply plugin: 'java'
+apply plugin: 'project-report'
 
 sourceCompatibility = 1.8
-version = '6.3.0_b01'
-jar {
-    manifest {
-        attributes 'Implementation-Title': 'LireSolr',
-                'Implementation-Version': version
-    }
-}
+version = project.property('versionString') + '_build' + project.property('buildNumber')
 
 repositories {
     mavenLocal()
@@ -26,7 +21,7 @@ dependencies {
     compile group: 'org.apache.lucene', name: 'lucene-analyzers-common', version: '6.3.0'
     compile group: 'org.apache.lucene', name: 'lucene-queryparser', version: '6.3.0'
     compile group: 'org.apache.lucene', name: 'lucene-queries', version: '6.3.0'
-    
+
     // ---< Solr >---
     // https://mvnrepository.com/artifact/org.apache.solr/solr-core
     compile group: 'org.apache.solr', name: 'solr-core', version: '6.3.0'
@@ -44,7 +39,7 @@ dependencies {
     compile group: 'com.sangupta', name: 'jopensurf', version: '1.0.0'
     // https://mvnrepository.com/artifact/org.bytedeco.javacpp-presets/opencv
     // compile group: 'org.bytedeco.javacpp-presets', name: 'opencv', version: '2.4.11-0.11'
-    
+
     // ---< Helper files >---
     // https://mvnrepository.com/artifact/com.twelvemonkeys.imageio/imageio-jpeg
     compile group: 'com.twelvemonkeys.imageio', name: 'imageio-jpeg', version: '3.3.1'
@@ -57,3 +52,45 @@ dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
 
 }
+
+
+
+jar {
+    Properties props = new Properties()
+    File propsFile = new File('gradle.properties')
+    props.load(propsFile.newDataInputStream())
+    Integer nextbuildnum = (((props.getProperty('buildNumber')) as BigDecimal) + 1)
+    props.setProperty('buildNumber', nextbuildnum.toString())
+
+    def date = new Date()
+    def formattedDate = date.format('yyyy-MM-dd-HHmm')
+    props.setProperty('buildDate', formattedDate.toString())
+
+    props.store(propsFile.newWriter(), null)
+
+    archiveName = baseName+'-'+props.getProperty('versionString')+'-build'+nextbuildnum.toString()+'.'+extension
+
+    manifest {
+        attributes 'Implementation-Title': 'LireSolr',
+                'Implementation-Version': props.getProperty('versionString') + ' build' + nextbuildnum.toString() + ' date' + formattedDate.toString()
+    }
+}
+
+/**
+ * Deploys the results from the jar task to Solr.
+ */
+task deployToSolr(type: Copy, dependsOn: jar) {
+    String path = 'D:/Java/Libs/solr-6.3.0/server/solr-webapp/webapp/WEB-INF/lib/'
+    delete path + 'lire-solr.jar'
+    delete path + 'lire.jar'
+    from('build/libs'){
+        include '*.jar'
+        rename { 'lire-solr.jar' }
+    }
+    from('lib'){
+        include 'LIRE-*.jar'
+        rename { 'lire.jar' }
+    }
+    into path
+}
+

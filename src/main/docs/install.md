@@ -17,3 +17,8 @@ I assume the better way to learn to handle Solr is by reading the Solr documenta
 
 1. [Solr Reference Guide](https://cwiki.apache.org/confluence/display/solr/Getting+Started)
 1. [Solr web page](http://lucene.apache.org/solr/)
+
+## Common Solr Commands
+
+* Deleting everything in the core: `<delete><query>*:*</query></delete>`
+* Committing changes: `<commit/>`

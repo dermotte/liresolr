@@ -86,7 +86,7 @@ import java.util.concurrent.LinkedBlockingQueue;
  * @author Mathias Lux, mathias@juggle.at on  13.08.2013
  */
 public class ParallelSolrIndexer implements Runnable {
-    private final int maxCacheSize = 100;
+    private final int maxCacheSize = 250;
     //    private static HashMap<Class, String> classToPrefix = new HashMap<Class, String>(5);
     private boolean force = false;
     private static boolean individualFiles = false;
@@ -398,6 +398,8 @@ public class ParallelSolrIndexer implements Runnable {
                 while ((file = br.readLine()) != null) {
                     next = new File(file);
                     try {
+                        // reading from harddrive to buffer to reduce the load on the HDD and move decoding to the
+                        // consumers using java.nio
                         int fileSize = (int) next.length();
                         byte[] buffer = new byte[fileSize];
                         FileInputStream fis = new FileInputStream(next);
