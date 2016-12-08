@@ -8,11 +8,11 @@ a ValeSource Parser for content based re-ranking and a parallel indexing applica
 
 An outdated demo can be found at [http://demo-itec.uni-klu.ac.at/liredemo/](http://demo-itec.uni-klu.ac.at/liredemo/)
 
-If you need help on the plugin, please use the mailing list at http://groups.google.com/group/lire-dev to ask questions. If you need help with your project, please contact me, we also offer consulting services.
+If you need help on the plugin, please use the mailing list at [lire-dev mailing list](http://groups.google.com/group/lire-dev) to ask questions. Additional documentation is available on [blob/master/src/main/docs/index.md](blob/master/src/main/docs/index.md) If you need help with your project, please contact me, we also offer consulting services.
 
 If you use LIRE Solr for scientific purposes, please cite the following paper: 
 
-Lux, Mathias, and Glenn Macstravic. "The LIRE Request Handler: A Solr Plug-In for Large Scale Content Based Image Retrieval." MultiMedia Modeling. Springer International Publishing, 2014.
+> *Lux, Mathias, and Glenn Macstravic* "The LIRE Request Handler: A Solr Plug-In for Large Scale Content Based Image Retrieval." *MultiMedia Modeling. Springer International Publishing, 2014*. [Springer](http://link.springer.com/chapter/10.1007/978-3-319-04117-9_39)
 
 The request handler supports four different types of queries
 
