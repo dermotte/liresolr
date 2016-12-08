@@ -12,7 +12,7 @@ If you need help on the plugin, please use the mailing list at [lire-dev mailing
 
 If you use LIRE Solr for scientific purposes, please cite the following paper: 
 
-> *Lux, Mathias, and Glenn Macstravic* "The LIRE Request Handler: A Solr Plug-In for Large Scale Content Based Image Retrieval." *MultiMedia Modeling. Springer International Publishing, 2014*. [Springer](http://link.springer.com/chapter/10.1007/978-3-319-04117-9_39)
+> *Mathias Lux and Glenn Macstravic* "The LIRE Request Handler: A Solr Plug-In for Large Scale Content Based Image Retrieval." *MultiMedia Modeling. Springer International Publishing, 2014*. [Springer](http://link.springer.com/chapter/10.1007/978-3-319-04117-9_39)
 
 The request handler supports four different types of queries
 
