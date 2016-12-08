@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>LIRE Test</title>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" crossorigin="anonymous">
+
+    <script language="JavaScript">
+        serverUrlPrefix = "lire/";
+
+        function printResults(docs) {
+            var last = $("#results");
+            for (var i =0; i< docs.length; i++) {
+                myID = docs[i].id.toString();
+                last.append('<div class="col-xs-4">'+myID+'</div>');
+            }
+        }
+
+        $( document ).ready(function() {
+            // get JSON-formatted data from the server
+            $("#perf").html("<i class=\"fa fa-spinner fa-pulse fa-3x fa-fw\"></i>");
+
+            $.getJSON( serverUrlPrefix + "lireq", function( myResult ) {
+                $("#perf").html("Index search time: " + myResult.responseHeader.QTime + " ms");
+                console.log(myResult);
+                printResults(myResult.docs);
+            });
+
+        });
+    </script>
+</head>
+<body>
+<div class="container">
+    <div class="row">
+        <div class="col-md-12"><h1>LIRE Solr Demo</h1></div>
+    </div>
+    <div class="row" id="imagegrid">
+        <div class="col-xs-8" id="results"><h2>Results</h2></div>
+        <div class="col-xs-4" id="perf">&nbsp;</div>
+    </div>
+</div>
+</body>
+</html>

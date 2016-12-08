@@ -8,6 +8,7 @@ import org.apache.lucene.document.Document;
  */
 public class CachingSimpleResult extends SimpleResult {
     Document document;
+
     /**
      * Constructor for a result. The indexNumer is needed for sorting issues. Problem is that the TreeMap used for
      * collecting the results considers equality of objects based on the compareTo function. So if an image is in
@@ -18,7 +19,7 @@ public class CachingSimpleResult extends SimpleResult {
      * method.
      *
      * @param distance    the actual distance to the query
-     * @param document the document instance form the Lucene index
+     * @param document    the document instance form the Lucene index
      * @param indexNumber the running number from the IndexReader. Needed for sorting issues in the result TreeMap.
      */
     public CachingSimpleResult(double distance, Document document, int indexNumber) {
@@ -29,4 +30,17 @@ public class CachingSimpleResult extends SimpleResult {
     public Document getDocument() {
         return document;
     }
+
+    /**
+     * Sets all the member anew, just to be able to save instances.
+     * @param distance
+     * @param document
+     * @param indexNumber
+     */
+    public void set(double distance, Document document, int indexNumber) {
+        this.setDistance(distance);
+        this.document = document;
+        this.setIndexNumber(indexNumber);
+    }
+
 }
