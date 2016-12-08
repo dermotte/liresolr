@@ -203,7 +203,7 @@ public class LireValueSource extends ValueSource {
                     return target.length() > 0;
                 }
 
-                // This is the actual value returned
+
                 @Override
                 public float floatVal(int doc) {
                     return (float) doubleVal(doc);
@@ -216,9 +216,15 @@ public class LireValueSource extends ValueSource {
                             : null;
                 }
 
+                /**
+                 * This method basically decides which type is delivered on request. It can be a String,
+                 * in this case it is the double form the distance function.
+                 * @param doc
+                 * @return the distance as Double, mapping to {@link FunctionValues#doubleVal(int)}
+                 */
                 @Override
                 public Object objectVal(int doc) {
-                    return strVal(doc);
+                    return doubleVal(doc);
                 }
 
                 @Override
@@ -235,7 +241,7 @@ public class LireValueSource extends ValueSource {
                         tmpFeature.setByteArrayRepresentation(binaryValues.get(doc).bytes, binaryValues.get(doc).offset, binaryValues.get(doc).length);
                         return tmpFeature.getDistance(feature);
                     } else
-                        return (float) maxDistance; // make sure max distance is returned for those without value
+                        return maxDistance; // make sure max distance is returned for those without value
                 }
             };
         } else {
