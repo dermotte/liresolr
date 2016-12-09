@@ -121,7 +121,7 @@ public class LireRequestHandler extends RequestHandlerBase {
     public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
         // (1) check if the necessary parameters are here
         if (req.getParams().get("hashes") != null) { // we are searching for hashes ...
-            handleHashSearch(req, rsp);
+            handleHashSearch(req, rsp); // not really supported, just here for legacy.
         } else if (req.getParams().get("url") != null) { // we are searching for an image based on an URL
             handleUrlSearch(req, rsp);
         } else if (req.getParams().get("id") != null) { // we are searching for an image based on an URL
@@ -170,8 +170,8 @@ public class LireRequestHandler extends RequestHandlerBase {
 
                 // Re-generating the hashes to save space (instead of storing them in the index)
                 int[] hashes = BitSampling.generateHashes(queryFeature.getFeatureVector());
-                List<Term> termFilter = createTermFilter(hashes, paramField, numberOfQueryTerms);
-                doSearch(req, rsp, searcher, paramField, paramRows, termFilter, createQuery(hashes, paramField, numberOfQueryTerms), queryFeature);
+//                List<Term> termFilter = createTermFilter(hashes, paramField, numberOfQueryTerms); // term filter needed here ...
+                doSearch(req, rsp, searcher, paramField, paramRows, null, createQuery(hashes, paramField, numberOfQueryTerms), queryFeature);
             } else {
                 rsp.add("Error", "Did not find an image with the given id " + req.getParams().get("id"));
             }
@@ -225,7 +225,6 @@ public class LireRequestHandler extends RequestHandlerBase {
         HashTermStatistics.addToStatistics(req.getSearcher(), paramField);
 
         GlobalFeature feat = null;
-        List<Term> termFilter = null;
         int[] hashes = null;
         // wrapping the whole part in the try
         try {
@@ -239,7 +238,6 @@ public class LireRequestHandler extends RequestHandlerBase {
             }
             feat.extract(img);
             hashes = BitSampling.generateHashes(feat.getFeatureVector());
-            // termFilter = createTermFilter(hashes, paramField, numberOfQueryTerms);
         } catch (Exception e) {
             rsp.add("Error", "Error reading image from URL: " + paramUrl + ": " + e.getMessage());
             e.printStackTrace();
@@ -329,49 +327,27 @@ public class LireRequestHandler extends RequestHandlerBase {
 
     /**
      * Actual search implementation based on (i) hash based retrieval and (ii) feature based re-ranking.
-     *
-     * @param rsp
-     * @param searcher
-     * @param hashFieldName the hash field name
-     * @param maximumHits
-     * @param termsForFiltering
-     * @param queryFeature
+     * @param req the SolrQueryRequest
+     * @param rsp the response to write the data to
+     * @param searcher the actual index searcher object to search the index
+     * @param hashFieldName the name of the field the hashes can be found
+     * @param maximumHits the maximum nuber of hits, the smaller the faster
+     * @param termsForFiltering can be null
+     * @param query the (Boolean) query for querying the candidates from the IndexSearcher
+     * @param queryFeature the image feature used for re-ranking the results
      * @throws IOException
      * @throws IllegalAccessException
      * @throws InstantiationException
      */
-    private void doSearch(SolrQueryRequest req, SolrQueryResponse rsp, SolrIndexSearcher searcher, String hashFieldName, int maximumHits, List<Term> termsForFiltering, Query query, GlobalFeature queryFeature) throws IOException, IllegalAccessException, InstantiationException {
+    private void doSearch(SolrQueryRequest req, SolrQueryResponse rsp, SolrIndexSearcher searcher, String hashFieldName,
+                          int maximumHits, List<Term> termsForFiltering, Query query, GlobalFeature queryFeature)
+            throws IOException, IllegalAccessException, InstantiationException {
         // temp feature instance
         GlobalFeature tmpFeature = queryFeature.getClass().newInstance();
         // Taking the time of search for statistical purposes.
         time = System.currentTimeMillis();
 
-        Filter filter = null;
-        // TODO: Re-Implement filter function.
-        // if the request contains a filter:
-//        if (req.getParams().get("fq")!=null) {
-//            // only filters with [<field>:<value> ]+ are supported
-//            StringTokenizer st = new StringTokenizer(req.getParams().get("fq"), " ");
-//            LinkedList<Term> filterTerms = new LinkedList<Term>();
-//            while (st.hasMoreElements()) {
-//                String[] tmpToken = st.nextToken().split(":");
-//                if (tmpToken.length>1) {
-//                    filterTerms.add(new Term(tmpToken[0], tmpToken[1]));
-//                }
-//            }
-//            if (filterTerms.size()>0)
-//                filter = new TermsFilter(filterTerms);
-//        }
-
-        TopDocs docs;   // with query only.
-        if (filter == null) {
-//            docs = searcher.search(query, numberOfCandidateResults); // TODO: Check for filter ...
-        } else {
-            // docs = searcher.search(query, filter, numberOfCandidateResults); // TODO: Check for filter ...
-        }
-//        TopDocs docs = searcher.search(query, new TermsFilter(termsForFiltering), numberOfCandidateResults);   // with TermsFilter and boosting by simple query
-//        TopDocs docs = searcher.search(new ConstantScoreQuery(new TermsFilter(termsForFiltering)), numberOfCandidateResults); // just with TermsFilter
-        docs = searcher.search(query, numberOfCandidateResults);
+        TopDocs docs = searcher.search(query, numberOfCandidateResults);
 
         time = System.currentTimeMillis() - time;
         rsp.add("RawDocsCount", docs.scoreDocs.length + "");

@@ -19,14 +19,27 @@
 
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" crossorigin="anonymous">
 
+    <script type="text/javascript" src="gridify.js"></script>
+
     <script language="JavaScript">
-        serverUrlPrefix = "lire/";
+        serverUrlPrefix = "http://localhost:8983/solr/lire/";
 
         function printResults(docs) {
-            var last = $("#results");
+            var last = $("#imagegrid");
             for (var i =0; i< docs.length; i++) {
                 myID = docs[i].id.toString();
-                last.append('<div class="col-xs-4">'+myID+'</div>');
+                last.append('<img class="img-responsive" src="http://192.168.1.38:8080/converted-'+myID.replace(".png", ".jpg")+'">');
+                // make it a grid
+                var options =
+                    {
+                        srcNode: 'img',             // grid items (class, node)
+                        margin: '20px',             // margin in pixel, default: 0px
+                        width: '150px',             // grid item width in pixel, default: 220px
+                        max_width: '',              // dynamic gird item width if specified, (pixel)
+                        resizable: true,            // re-layout if window resize
+                        transition: 'all 0.5s ease' // support transition for CSS3, default: all 0.5s ease
+                    }
+                document.querySelector('.grid').gridify(options);
             }
         }
 
@@ -48,10 +61,14 @@
     <div class="row">
         <div class="col-md-12"><h1>LIRE Solr Demo</h1></div>
     </div>
-    <div class="row" id="imagegrid">
+    <div class="row">
         <div class="col-xs-8" id="results"><h2>Results</h2></div>
         <div class="col-xs-4" id="perf">&nbsp;</div>
     </div>
+    <div class="row grid" id="imagegrid">
+
+    </div>
+
 </div>
 </body>
 </html>
