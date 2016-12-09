@@ -228,7 +228,19 @@ The outfile has to be send to the Solr server. Assuming the Solr server is local
     curl.exe http://localhost:8983/solr/lire/update -H "Content-Type: text/xml" --data-binary @outfile.xml
     curl.exe http://localhost:8983/solr/lire/update -H "Content-Type: text/xml" --data-binary "<commit/>"
 
-You need to commit you changes! If your outfile exceeds 500MB, curl might complain. Then use split to cut it into pieces and repair the root tags (`<add>` and `</add>`)
+You need to commit you changes! If your outfile exceeds 500MB, curl might complain. Then use split to cut it into pieces and repair the root tags (`<add>` and `</add>`). Here is an example how to do that with bash & linux (use *Git Bash* on Windows) under the assumption that the split leads to files *{0, 1, 2, ..., n}*
+
+```
+$> split -l 100000 -d images.xml images_
+$> echo "</add>" >> images_00 
+$> echo "</add>" >> images_01
+...
+$> echo "</add>" >> images_<n-1> 
+$> sed -i.old '1s;^;<add>;' images_01
+$> sed -i.old '1s;^;<add>;' images_02
+...
+$> sed -i.old '1s;^;<add>;' images_<n>
+```
 
 For small output files you may use the file upload option in the Solr admin interface. 
 
