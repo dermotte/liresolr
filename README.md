@@ -98,7 +98,7 @@ Parameters:
 Installation
 ============
 
-First run the dist task (ant task, in build.xml, check Apache Ant if you have not used it before, or try it in Intellij IDEA) to create a single jar. This should be integrated in the Solr class-path. Then add
+First run the dist task by `gradle build` command in liresolr folder (gradle should be installed for this) to create a plugin jar. Then copy jars: `cp ./build/libs/*.jar ./lib/*.jar /opt/solr/server/solr-webapp/webapp/WEB-INF/lib/`. Then add
 the new request handler has to be registered in the `solrconfig.xml` file:
 
      <requestHandler name="/lireq" class="net.semanticmetadata.lire.solr.LireRequestHandler">
