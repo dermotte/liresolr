@@ -8,7 +8,7 @@ a ValeSource Parser for content based re-ranking and a parallel indexing applica
 
 An outdated demo can be found at [http://demo-itec.uni-klu.ac.at/liredemo/](http://demo-itec.uni-klu.ac.at/liredemo/)
 
-If you need help on the plugin, please use the mailing list at [lire-dev mailing list](http://groups.google.com/group/lire-dev) to ask questions. Additional documentation is available on [blob/master/src/main/docs/index.md](blob/master/src/main/docs/index.md) If you need help with your project, please contact me, we also offer consulting services.
+If you need help on the plugin, please use the mailing list at [lire-dev mailing list](http://groups.google.com/group/lire-dev) to ask questions. Additional documentation is available on [src/main/docs/index.md](src/main/docs/index.md) If you need help with your project, please contact me, we also offer consulting services.
 
 If you use LIRE Solr for scientific purposes, please cite the following paper: 
 
