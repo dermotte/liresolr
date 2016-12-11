@@ -14,7 +14,7 @@ If you use LIRE Solr for scientific purposes, please cite the following paper:
 
 > *Mathias Lux and Glenn Macstravic* "The LIRE Request Handler: A Solr Plug-In for Large Scale Content Based Image Retrieval." *MultiMedia Modeling. Springer International Publishing, 2014*. [Springer](http://link.springer.com/chapter/10.1007/978-3-319-04117-9_39)
 
-The request handler supports four different types of queries
+The request handler supports the following different types of queries
 
 1.  Get random images ...
 2.  Get images that are looking like the one with id ...
@@ -41,7 +41,7 @@ The field parameter (partially) works with the LIRE request handler:
 
 Getting random images
 ---------------------
-Returns randomly chosen images from the index.
+Returns randomly chosen images from the index. While it does not seem extremely helpful, it's actuall great to find images to be used for example queries. 
 
 Parameters:
 
@@ -98,8 +98,7 @@ Parameters:
 Installation
 ============
 
-First run the dist task by `gradle build` command in liresolr folder (gradle should be installed for this) to create a plugin jar. Then copy jars: `cp ./build/libs/*.jar ./lib/*.jar /opt/solr/server/solr-webapp/webapp/WEB-INF/lib/`. Then add
-the new request handler has to be registered in the `solrconfig.xml` file:
+First run the dist task by `gradle build` command in liresolr folder (gradle should be installed for this) to create a plugin jar. Then copy jars: `cp ./build/libs/*.jar ./lib/*.jar /opt/solr/server/solr-webapp/webapp/WEB-INF/lib/`. Then add the new request handler has to be registered in the `solrconfig.xml` file:
 
      <requestHandler name="/lireq" class="net.semanticmetadata.lire.solr.LireRequestHandler">
         <lst name="defaults">
@@ -111,7 +110,7 @@ the new request handler has to be registered in the `solrconfig.xml` file:
 
 Use of the request handler is detailed above.
 
-You'll also need the respective fields in the `schema.xml` (in the base configuration also called `managed-schema`) file:
+You'll also need the respective fields in the `schema.xml` (in the base configuration in Solr 6.3.0 it is called `managed-schema`) file:
 
     <!-- file path for ID -->
     <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false" />
@@ -186,11 +185,11 @@ If you extract the features yourself, use code like his one:
 Indexing
 ========
 
-Check ParallelSolrIndexer.java for indexing. It creates XML documents (either one per image or one single large file)
+Check `ParallelSolrIndexer.java` for indexing. It creates XML documents (either one per image or one single large file)
 to be sent to the Solr Server.
 
 ParallelSolrIndexer
-===================
+-------------------
 This help text is shown if you start the ParallelSolrIndexer with the '-h' option.
 
     $> ParallelSolrIndexer -i <infile> [-o <outfile>] [-n <threads>] [-f] [-p] [-m <max_side_length>] [-r <full class name>] \\
@@ -199,13 +198,13 @@ This help text is shown if you start the ParallelSolrIndexer with the '-h' optio
 Note: if you don't specify an outfile just ".xml" is appended to the input image for output. So there will be one XML
 file per image. Specifying an outfile will collect the information of all images in one single file.
 
--n ... number of threads should be something your computer can cope with. default is 4.
--f ... forces overwrite of outfile
--p ... enables image processing before indexing (despeckle, trim white space)
--m ... maximum side length of images when indexed. All bigger files are scaled down. default is 512.
--r ... defines a class implementing net.semanticmetadata.lire.solr.indexing.ImageDataProcessor
+- *-n* ... number of threads should be something your computer can cope with. default is 4.
+- *-f* ... forces overwrite of outfile
+- *-p* ... enables image processing before indexing (despeckle, trim white space)
+- *-m* ... maximum side length of images when indexed. All bigger files are scaled down. default is 512.
+- *-r* ... defines a class implementing net.semanticmetadata.lire.solr.indexing.ImageDataProcessor
        that provides additional fields.
--y ... defines which feature classes are to be extracted. default is "-y ph,cl,eh,jc". "-y ce,ac" would
+- *-y* ... defines which feature classes are to be extracted. default is "-y ph,cl,eh,jc". "-y ce,ac" would
        add to the other four features.
 
 INFILE
@@ -222,7 +221,7 @@ from the root directory:
 
 OUTFILE
 -------
-The outfile has to be send to the Solr server. Assuming the Solr server is local you may use
+The `outfile` from `ParallelIndexer` has to be send to the Solr server. Assuming the Solr server is local you may use
 
     curl.exe http://localhost:8983/solr/lire/update -H "Content-Type: text/xml" --data-binary "<delete><query>*:*</query></delete>"
     curl.exe http://localhost:8983/solr/lire/update -H "Content-Type: text/xml" --data-binary @outfile.xml
@@ -245,7 +244,7 @@ $> sed -i.old '1s;^;<add>;' images_<n>
 For small output files you may use the file upload option in the Solr admin interface. 
 
 LireEntityProcessor
-===================
+-------------------
 
 Another way is to use the LireEntityProcessor. Then you have to reference the *solr-data-config.xml* file in the
 *solrconfig.xml*, and then give the configuration for the EntityProcessor like this:
