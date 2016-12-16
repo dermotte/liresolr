@@ -28,8 +28,9 @@ public class FeatureRegistry {
 
 
     // Constants.
-    private static final String featureFieldPostfix = "_hi";   // contains the histogram
-    private static final String hashFieldPostfix = "_ha";      // contains the hash
+    public static final String featureFieldPostfix = "_hi";   // contains the histogram
+    public static final String hashFieldPostfix = "_ha";      // contains the hash
+    public static final String metricSpacesFieldPostfix = "_ms";      // contains the hash
 
     static {
         // initial adding of the supported features:

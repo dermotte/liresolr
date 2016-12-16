@@ -140,7 +140,8 @@ Alternatively you can use dynamic fields:
     <!-- the sole file name -->
     <field name="title" type="text_general" indexed="true" stored="true" multiValued="true"/>
     <!-- Dynamic fields for LIRE Solr -->
-    <dynamicField name="*_ha" type="text_ws" indexed="true" stored="true"/>
+    <dynamicField name="*_ha" type="text_ws" indexed="true" stored="false"/> <!-- if you are using BitSampling --> 
+    <dynamicField name="*_ms" type="text_ws" indexed="true" stored="false"/> <!-- if you are using Metric Spaces Indexing -->
     <dynamicField name="*_hi" type="binaryDV" indexed="false" stored="true"/>
 
 Do not forget to add the custom field at the very same file:

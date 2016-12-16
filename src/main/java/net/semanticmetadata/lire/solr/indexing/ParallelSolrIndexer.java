@@ -37,7 +37,7 @@
  *     http://www.semanticmetadata.net/lire, http://www.lire-project.net
  */
 
-package net.semanticmetadata.lire.solr;
+package net.semanticmetadata.lire.solr.indexing;
 
 import net.semanticmetadata.lire.imageanalysis.features.GlobalFeature;
 import net.semanticmetadata.lire.imageanalysis.features.global.ColorLayout;
@@ -46,7 +46,7 @@ import net.semanticmetadata.lire.imageanalysis.features.global.JCD;
 import net.semanticmetadata.lire.imageanalysis.features.global.PHOG;
 import net.semanticmetadata.lire.indexers.hashing.BitSampling;
 import net.semanticmetadata.lire.indexers.parallel.WorkItem;
-import net.semanticmetadata.lire.solr.indexing.ImageDataProcessor;
+import net.semanticmetadata.lire.solr.FeatureRegistry;
 import net.semanticmetadata.lire.utils.ImageUtils;
 import org.apache.commons.codec.binary.Base64;
 
