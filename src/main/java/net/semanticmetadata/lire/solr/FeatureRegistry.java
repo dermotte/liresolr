@@ -43,6 +43,7 @@ public class FeatureRegistry {
 
         // additional global features
         codeToClass.put("ac", AutoColorCorrelogram.class);
+        codeToClass.put("ad", ACCID.class);
         codeToClass.put("ce", CEDD.class);
         codeToClass.put("fc", FCTH.class);
         codeToClass.put("fo", FuzzyOpponentHistogram.class);

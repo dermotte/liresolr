@@ -277,4 +277,4 @@ Another way is to use the LireEntityProcessor. Then you have to reference the *s
         </document>
     </dataConfig>
 
-*Mathias Lux, 2016-12-08*
+*Mathias Lux, 2016-12-17*

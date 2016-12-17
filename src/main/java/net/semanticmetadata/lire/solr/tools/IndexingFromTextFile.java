@@ -7,16 +7,19 @@ import net.semanticmetadata.lire.indexers.tools.text.AbstractDocumentWriter;
 import net.semanticmetadata.lire.solr.FeatureRegistry;
 import net.semanticmetadata.lire.solr.indexing.ParallelSolrIndexer;
 import net.semanticmetadata.lire.utils.CommandLineUtils;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.output.ThresholdingOutputStream;
+import org.apache.hadoop.metrics2.annotation.Metric;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.zip.GZIPInputStream;
 
 /**
- * Created by mlux on 12/16/16.
+ * Reads a text file created by {@link net.semanticmetadata.lire.indexers.tools.text.ParallelExtraction} and creates
+ * an XML file for being sent to Solr while optionally adding hashes.
  */
 public class IndexingFromTextFile extends AbstractDocumentWriter {
     private static final boolean useXML = true;
@@ -42,6 +45,18 @@ public class IndexingFromTextFile extends AbstractDocumentWriter {
         super(infile, true, doHashingBitSampling, doMetricSpaceIndexing);
         this.outfile = outFile;
         bw = new BufferedWriter(new FileWriter(outfile));
+        super.loadMdsFilesAutomatically = false; // skip the auto load and read from resources ...
+        ClassLoader classloader = Thread.currentThread().getContextClassLoader();
+        try {
+            MetricSpaces.loadReferencePoints(new GZIPInputStream(classloader.getResourceAsStream("metricspaces/logos-ca-ee_CEDD.msd.gz")));
+            MetricSpaces.loadReferencePoints(new GZIPInputStream(classloader.getResourceAsStream("metricspaces/logos-ca-ee_ColorLayout.msd.gz")));
+            MetricSpaces.loadReferencePoints(new GZIPInputStream(classloader.getResourceAsStream("metricspaces/logos-ca-ee_EdgeHistogram.msd.gz")));
+            MetricSpaces.loadReferencePoints(new GZIPInputStream(classloader.getResourceAsStream("metricspaces/logos-ca-ee_FCTH.msd.gz")));
+            MetricSpaces.loadReferencePoints(new GZIPInputStream(classloader.getResourceAsStream("metricspaces/logos-ca-ee_OpponentHistogram.msd.gz")));
+            MetricSpaces.loadReferencePoints(new GZIPInputStream(classloader.getResourceAsStream("metricspaces/logos-ca-ee_PHOG.msd.gz")));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public static void main(String[] args) {
@@ -71,7 +86,7 @@ public class IndexingFromTextFile extends AbstractDocumentWriter {
     }
 
     @Override
-    protected void start() {
+    protected void startWriting() {
         try {
             bw.write("<add>");
         } catch (IOException e) {
@@ -86,7 +101,7 @@ public class IndexingFromTextFile extends AbstractDocumentWriter {
     }
 
     @Override
-    protected void finish() {
+    protected void finishWriting() {
         try {
             for (int i = 0; i < 20; i++) {
                 queue.put(new QueueItem(null, null));
@@ -189,6 +204,34 @@ public class IndexingFromTextFile extends AbstractDocumentWriter {
                     e.printStackTrace();
                 }
             }
+        }
+    }
+
+    class SplittingOutputStream extends ThresholdingOutputStream {
+        FileOutputStream currentOutputStream;
+        int count = 0;
+        String extension = "xml";
+        String basename = "";
+
+        public SplittingOutputStream(int threshold, File outFile) throws FileNotFoundException {
+            super(threshold);
+            String path = outFile.getPath();
+            extension = FilenameUtils.getExtension(path);
+            basename = FilenameUtils.getBaseName(path);
+            this.currentOutputStream = new FileOutputStream(basename + String.format("%03d", count) + extension, false);
+        }
+
+        @Override
+        protected OutputStream getStream() throws IOException {
+            return currentOutputStream;
+        }
+
+        @Override
+        protected void thresholdReached() throws IOException {
+            // flush and close current, roll over to new one.
+            currentOutputStream.flush();
+            IOUtils.closeQuietly(currentOutputStream);
+            currentOutputStream = new FileOutputStream(basename + String.format("%03d", ++count) + extension, false);
         }
     }
 
