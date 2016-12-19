@@ -6,12 +6,12 @@ package net.semanticmetadata.lire.solr.indexing;
 public class SimpleBackslashReplacer implements ImageDataProcessor {
     @Override
     public CharSequence getTitle(String filename) {
-        return filename.replaceAll("\\\\", "/");
+        return filename.substring(filename.indexOf(":")+1).replaceAll("\\\\", "/");
     }
 
     @Override
     public CharSequence getIdentifier(String filename) {
-        return filename.replaceAll("\\\\", "/");
+        return filename.substring(filename.indexOf(":")+1).replaceAll("\\\\", "/");
     }
 
     @Override

@@ -68,7 +68,7 @@ jar {
 
     props.store(propsFile.newWriter(), null)
 
-    archiveName = baseName+'-'+props.getProperty('versionString')+'-build'+nextbuildnum.toString()+'.'+extension
+    archiveName = baseName+'-'+props.getProperty('versionString')+'.'+extension
 
     manifest {
         attributes 'Implementation-Title': 'LireSolr',
@@ -80,17 +80,20 @@ jar {
  * Deploys the results from the jar task to Solr.
  */
 task deployToSolr(type: Copy, dependsOn: jar) {
+    String path = 'C:/Java/Apps/solr-6.3.0/server/solr-webapp/webapp/WEB-INF/lib/'
 //    String path = 'D:/Java/Libs/solr-6.3.0/server/solr-webapp/webapp/WEB-INF/lib/'
-//    delete path + 'lire-solr.jar'
-//    delete path + 'lire.jar'
-//    from('build/libs'){
-//        include '*.jar'
-//        rename { 'lire-solr.jar' }
-//    }
-//    from('lib'){
-//        include 'LIRE-*.jar'
-//        rename { 'lire.jar' }
-//    }
-//    into path
+    String lsJar = 'liresolr.jar'
+    String liJar = 'lire.jar'
+    delete path + lsJar
+    delete path + liJar
+    from('build/libs'){
+        include 'LireSolr*.jar'
+        rename {  lsJar }
+    }
+    from('lib'){
+        include 'LIRE-*.jar'
+        rename { liJar }
+    }
+    into path
 }
 

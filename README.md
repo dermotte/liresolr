@@ -84,6 +84,7 @@ Parameters:
 -   **feature** .. Base64 encoded feature histogram from LireFeature#getByteArrayRepresentation().
 -   **field** .. gives the feature field to search for (optional, default=cl_ha, values see above)
 -   **rows** .. indicates how many results should be returned (optional, default=60).
+-   **ms** .. prefer MetricSpaces over BitSampling (optional, default=true).
 -   **accuracy** .. double in [0.05, 1] indicates how many accurate the results should be (optional, default=0.33, less is less accurate, but faster).
 -   **candidates** .. int in [100, 100000] indicates how many accurate the results should be (optional, default=10000, less is less accurate, but faster).
 
