@@ -41,12 +41,15 @@ package net.semanticmetadata.lire.solr;
 
 import net.semanticmetadata.lire.imageanalysis.features.GlobalFeature;
 import net.semanticmetadata.lire.imageanalysis.features.global.ColorLayout;
-import net.semanticmetadata.lire.imageanalysis.features.global.EdgeHistogram;
 import net.semanticmetadata.lire.indexers.hashing.BitSampling;
+import net.semanticmetadata.lire.indexers.hashing.MetricSpaces;
 import net.semanticmetadata.lire.utils.ImageUtils;
+import net.semanticmetadata.lire.utils.StatsUtils;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.*;
+import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.params.SolrParams;
@@ -54,7 +57,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.search.Filter;
 import org.apache.solr.search.SolrIndexSearcher;
 
 import javax.imageio.ImageIO;
@@ -90,13 +92,14 @@ public class LireRequestHandler extends RequestHandlerBase {
     private double numberOfQueryTerms = 0.33;
     private static final double DEFAULT_NUMBER_OF_QUERY_TERMS = 0.33;
 
+    /**
+     * If metric spaces should be used instead of BitSampling.
+     */
+    private boolean useMetricSpaces = true;
+    private static final boolean DEFAULT_USE_METRIC_SPACES = true;
+
     static {
-        // one time hash function read ...
-        try {
-            BitSampling.readHashFunctions();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        HashingMetricSpacesManager.init(); // load reference points from disk.
     }
 
 
@@ -150,6 +153,7 @@ public class LireRequestHandler extends RequestHandlerBase {
             String paramField = req.getParams().get("field", "cl_ha");
             numberOfQueryTerms = req.getParams().getDouble("accuracy", DEFAULT_NUMBER_OF_QUERY_TERMS);
             numberOfCandidateResults = req.getParams().getInt("candidates", DEFAULT_NUMBER_OF_CANDIDATES);
+            useMetricSpaces = req.getParams().getBool("ms", DEFAULT_USE_METRIC_SPACES);
             int paramRows = req.getParams().getInt("rows", defaultNumberOfResults);
 
             // check singleton cache if the term stats can be cached.
@@ -164,14 +168,22 @@ public class LireRequestHandler extends RequestHandlerBase {
                     rsp.add("Error", "Could not find the DocValues of the query document. Are they in the index? Id: " + req.getParams().get("id"));
                     // System.err.println("Could not find the DocValues of the query document. Are they in the index?");
                 }
-                BytesRef bytesRef;
-                bytesRef = binaryValues.get(hits.scoreDocs[0].doc);
-                queryFeature.setByteArrayRepresentation(bytesRef.bytes, bytesRef.offset, bytesRef.length);
+                queryFeature.setByteArrayRepresentation(binaryValues.get(hits.scoreDocs[0].doc).bytes, binaryValues.get(hits.scoreDocs[0].doc).offset, binaryValues.get(hits.scoreDocs[0].doc).length);
 
-                // Re-generating the hashes to save space (instead of storing them in the index)
-                int[] hashes = BitSampling.generateHashes(queryFeature.getFeatureVector());
-//                List<Term> termFilter = createTermFilter(hashes, paramField, numberOfQueryTerms); // term filter needed here ...
-                doSearch(req, rsp, searcher, paramField, paramRows, null, createQuery(hashes, paramField, numberOfQueryTerms), queryFeature);
+                Query query = null;
+                if (!useMetricSpaces) {
+                    // Re-generating the hashes to save space (instead of storing them in the index)
+                    int[] hashes = BitSampling.generateHashes(queryFeature.getFeatureVector());
+                    query = createQuery(hashes, paramField, numberOfQueryTerms);
+                } else {
+                    // ----< Metric Spaces >-----
+                    int queryLength = (int) StatsUtils.clamp(numberOfQueryTerms * MetricSpaces.getPostingListLength(queryFeature), 3, MetricSpaces.getPostingListLength(queryFeature));
+                    String msQuery = MetricSpaces.generateBoostedQuery(queryFeature, queryLength);
+                    QueryParser qp = new QueryParser(paramField.replace("_ha", "_ms"), new WhitespaceAnalyzer());
+                    query = qp.parse(msQuery);
+                }
+//                List<Term> termFilter = createTermFilter(hashes, paramField, numberOfQueryTerms); // todo: term filter needed here ...
+                doSearch(req, rsp, searcher, paramField, paramRows, null, query, queryFeature);
             } else {
                 rsp.add("Error", "Did not find an image with the given id " + req.getParams().get("id"));
             }
@@ -221,11 +233,13 @@ public class LireRequestHandler extends RequestHandlerBase {
         int paramRows = params.getInt("rows", defaultNumberOfResults);
         numberOfQueryTerms = req.getParams().getDouble("accuracy", DEFAULT_NUMBER_OF_QUERY_TERMS);
         numberOfCandidateResults = req.getParams().getInt("candidates", DEFAULT_NUMBER_OF_CANDIDATES);
+        useMetricSpaces = req.getParams().getBool("ms", DEFAULT_USE_METRIC_SPACES);
 
         HashTermStatistics.addToStatistics(req.getSearcher(), paramField);
 
         GlobalFeature feat = null;
         int[] hashes = null;
+        Query query = null;
         // wrapping the whole part in the try
         try {
             BufferedImage img = ImageIO.read(new URL(paramUrl).openStream());
@@ -238,17 +252,32 @@ public class LireRequestHandler extends RequestHandlerBase {
             }
             feat.extract(img);
             hashes = BitSampling.generateHashes(feat.getFeatureVector());
+
+
+            if (!useMetricSpaces) {
+                // Re-generating the hashes to save space (instead of storing them in the index)
+                hashes = BitSampling.generateHashes(feat.getFeatureVector());
+                query = createQuery(hashes, paramField, numberOfQueryTerms);
+            } else {
+                // ----< Metric Spaces >-----
+                int queryLength = (int) StatsUtils.clamp(numberOfQueryTerms * MetricSpaces.getPostingListLength(feat), 3, MetricSpaces.getPostingListLength(feat));
+                String msQuery = MetricSpaces.generateBoostedQuery(feat, queryLength);
+                QueryParser qp = new QueryParser(paramField.replace("_ha", "_ms"), new WhitespaceAnalyzer());
+                query = qp.parse(msQuery);
+            }
+
         } catch (Exception e) {
             rsp.add("Error", "Error reading image from URL: " + paramUrl + ": " + e.getMessage());
             e.printStackTrace();
         }
-        // search if the feature has been extracted.
-        if (feat != null)
-            doSearch(req, rsp, req.getSearcher(), paramField, paramRows, null, createQuery(hashes, paramField, numberOfQueryTerms), feat);
+        // search if the feature has been extracted and query is there.
+        if (feat != null && query != null)
+            doSearch(req, rsp, req.getSearcher(), paramField, paramRows, null, query, feat);
     }
 
     /**
      * Methods orders around the hashes already by docFreq removing those with docFreq == 0
+     *
      * @param req
      * @param rsp
      * @throws IOException
@@ -275,6 +304,7 @@ public class LireRequestHandler extends RequestHandlerBase {
             int[] hashes = BitSampling.generateHashes(feat.getFeatureVector());
             List<String> hashStrings = orderHashes(hashes, paramField);
             rsp.add("hashes", hashStrings);
+            rsp.add("ms", MetricSpaces.generateHashString(feat));
         } catch (Exception e) {
             rsp.add("Error", "Error reading image from URL: " + paramUrl + ": " + e.getMessage());
             e.printStackTrace();
@@ -282,7 +312,7 @@ public class LireRequestHandler extends RequestHandlerBase {
     }
 
     /**
-     * Search based on the given image hashes.
+     * Search based on the given image hashes. TODO: Add MetricSpaces here.
      *
      * @param req
      * @param rsp
@@ -327,14 +357,15 @@ public class LireRequestHandler extends RequestHandlerBase {
 
     /**
      * Actual search implementation based on (i) hash based retrieval and (ii) feature based re-ranking.
-     * @param req the SolrQueryRequest
-     * @param rsp the response to write the data to
-     * @param searcher the actual index searcher object to search the index
-     * @param hashFieldName the name of the field the hashes can be found
-     * @param maximumHits the maximum nuber of hits, the smaller the faster
+     *
+     * @param req               the SolrQueryRequest
+     * @param rsp               the response to write the data to
+     * @param searcher          the actual index searcher object to search the index
+     * @param hashFieldName     the name of the field the hashes can be found
+     * @param maximumHits       the maximum nuber of hits, the smaller the faster
      * @param termsForFiltering can be null
-     * @param query the (Boolean) query for querying the candidates from the IndexSearcher
-     * @param queryFeature the image feature used for re-ranking the results
+     * @param query             the (Boolean) query for querying the candidates from the IndexSearcher
+     * @param queryFeature      the image feature used for re-ranking the results
      * @throws IOException
      * @throws IllegalAccessException
      * @throws InstantiationException
@@ -462,7 +493,7 @@ public class LireRequestHandler extends RequestHandlerBase {
      *
      * @param hashes
      * @param paramField
-     * @param size in [0.1, 1]
+     * @param size       in [0.1, 1]
      * @return
      */
     private BooleanQuery createQuery(int[] hashes, String paramField, double size) {
@@ -488,7 +519,7 @@ public class LireRequestHandler extends RequestHandlerBase {
      * while deleting those that are not in the index at all. Meaning: terms sorted by docFreq ascending, removing
      * those with docFreq == 0
      *
-     * @param hashes the int[] of hashes
+     * @param hashes     the int[] of hashes
      * @param paramField the field in the index.
      * @return
      */
@@ -509,6 +540,7 @@ public class LireRequestHandler extends RequestHandlerBase {
      * This is used to create a TermsFilter ... should be used to select in the index based on many terms.
      * We just need to integrate a minimum query too, else we'd not get the appropriate results.
      * TODO: This is wrong.
+     *
      * @param hashes
      * @param paramField
      * @return

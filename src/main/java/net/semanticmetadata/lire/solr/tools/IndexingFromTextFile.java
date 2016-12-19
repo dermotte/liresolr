@@ -5,17 +5,16 @@ import net.semanticmetadata.lire.indexers.hashing.BitSampling;
 import net.semanticmetadata.lire.indexers.hashing.MetricSpaces;
 import net.semanticmetadata.lire.indexers.tools.text.AbstractDocumentWriter;
 import net.semanticmetadata.lire.solr.FeatureRegistry;
+import net.semanticmetadata.lire.solr.HashingMetricSpacesManager;
 import net.semanticmetadata.lire.solr.indexing.ParallelSolrIndexer;
 import net.semanticmetadata.lire.utils.CommandLineUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.ThresholdingOutputStream;
-import org.apache.hadoop.metrics2.annotation.Metric;
 
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.zip.GZIPInputStream;
 
 /**
  * Reads a text file created by {@link net.semanticmetadata.lire.indexers.tools.text.ParallelExtraction} and creates
@@ -29,7 +28,7 @@ public class IndexingFromTextFile extends AbstractDocumentWriter {
             "$> IndexingFromTextFile -i <infile> -o <outfile> [-hb] [-hm] [-s <documents>]\n" +
             "\n" +
             "-i  ... path to the input file\n" +
-            "-o  ... path to the Lucene index for output\n" +
+            "-o  ... path to the XML file for output\n" +
             "-s  ... split files to have a maximum of <documents> per file.\n" +
             "-hb ... employ BitSampling Hashing (overrules MetricSpaces, loads all *.mds files from current directory)\n" +
             "-hm ... employ MetricSpaces Indexing";
@@ -38,7 +37,7 @@ public class IndexingFromTextFile extends AbstractDocumentWriter {
     LinkedBlockingQueue<QueueItem> queue = new LinkedBlockingQueue<>(500);
     BufferedWriter bw;
     List<Thread> threads;
-    private int numThreads = 4;
+    private int numThreads = 8;
 
     public IndexingFromTextFile(File infile, File outFile,
                                 boolean doHashingBitSampling, boolean doMetricSpaceIndexing, int splitAt) throws IOException {
@@ -46,17 +45,7 @@ public class IndexingFromTextFile extends AbstractDocumentWriter {
         this.outfile = outFile;
         bw = new BufferedWriter(new FileWriter(outfile));
         super.loadMdsFilesAutomatically = false; // skip the auto load and read from resources ...
-        ClassLoader classloader = Thread.currentThread().getContextClassLoader();
-        try {
-            MetricSpaces.loadReferencePoints(new GZIPInputStream(classloader.getResourceAsStream("metricspaces/logos-ca-ee_CEDD.msd.gz")));
-            MetricSpaces.loadReferencePoints(new GZIPInputStream(classloader.getResourceAsStream("metricspaces/logos-ca-ee_ColorLayout.msd.gz")));
-            MetricSpaces.loadReferencePoints(new GZIPInputStream(classloader.getResourceAsStream("metricspaces/logos-ca-ee_EdgeHistogram.msd.gz")));
-            MetricSpaces.loadReferencePoints(new GZIPInputStream(classloader.getResourceAsStream("metricspaces/logos-ca-ee_FCTH.msd.gz")));
-            MetricSpaces.loadReferencePoints(new GZIPInputStream(classloader.getResourceAsStream("metricspaces/logos-ca-ee_OpponentHistogram.msd.gz")));
-            MetricSpaces.loadReferencePoints(new GZIPInputStream(classloader.getResourceAsStream("metricspaces/logos-ca-ee_PHOG.msd.gz")));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        HashingMetricSpacesManager.init(); // load reference points from disk.
     }
 
     public static void main(String[] args) {

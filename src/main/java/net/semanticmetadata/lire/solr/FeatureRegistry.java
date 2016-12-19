@@ -127,6 +127,10 @@ public class FeatureRegistry {
         return code + hashFieldPostfix;
     }
 
+    public static String codeToMetricSpacesField(String code) {
+        return code + metricSpacesFieldPostfix;
+    }
+
     public static String codeToFeatureField(String code) {
         return code + featureFieldPostfix;
     }
