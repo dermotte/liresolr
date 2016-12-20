@@ -152,7 +152,8 @@ public class LireRequestHandler extends RequestHandlerBase {
     private void handleIdSearch(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException, InstantiationException, IllegalAccessException {
         SolrIndexSearcher searcher = req.getSearcher();
         try {
-            TopDocs hits = searcher.search(new TermQuery(new Term("id", req.getParams().get("id"))), 1);
+//            TopDocs hits = searcher.search(new TermQuery(new Term("id", req.getParams().get("id"))), 1);
+            int queryDocId = searcher.getFirstMatch(new Term("id", req.getParams().get("id")));
             // get the parameters
             String paramField = req.getParams().get("field", "cl_ha");
             numberOfQueryTerms = req.getParams().getDouble("accuracy", DEFAULT_NUMBER_OF_QUERY_TERMS);
@@ -160,22 +161,22 @@ public class LireRequestHandler extends RequestHandlerBase {
             useMetricSpaces = req.getParams().getBool("ms", DEFAULT_USE_METRIC_SPACES);
             int paramRows = req.getParams().getInt("rows", defaultNumberOfResults);
 
-            // check singleton cache if the term stats can be cached.
-            HashTermStatistics.addToStatistics(searcher, paramField);
             GlobalFeature queryFeature = (GlobalFeature) FeatureRegistry.getClassForHashField(paramField).newInstance();
             rsp.add("QueryField", paramField);
             rsp.add("QueryFeature", queryFeature.getClass().getName());
-            if (hits.scoreDocs.length > 0) {
+            if (queryDocId > -1) {
                 // Using DocValues to get the actual data from the index.
                 BinaryDocValues binaryValues = MultiDocValues.getBinaryValues(searcher.getIndexReader(), FeatureRegistry.getFeatureFieldName(paramField));
                 if (binaryValues == null) {
                     rsp.add("Error", "Could not find the DocValues of the query document. Are they in the index? Id: " + req.getParams().get("id"));
                     // System.err.println("Could not find the DocValues of the query document. Are they in the index?");
                 }
-                queryFeature.setByteArrayRepresentation(binaryValues.get(hits.scoreDocs[0].doc).bytes, binaryValues.get(hits.scoreDocs[0].doc).offset, binaryValues.get(hits.scoreDocs[0].doc).length);
+                queryFeature.setByteArrayRepresentation(binaryValues.get(queryDocId).bytes, binaryValues.get(queryDocId).offset, binaryValues.get(queryDocId).length);
 
                 Query query = null;
                 if (!useMetricSpaces) {
+                    // check singleton cache if the term stats can be cached.
+                    HashTermStatistics.addToStatistics(searcher, paramField);
                     // Re-generating the hashes to save space (instead of storing them in the index)
                     int[] hashes = BitSampling.generateHashes(queryFeature.getFeatureVector());
                     query = createQuery(hashes, paramField, numberOfQueryTerms);
@@ -259,7 +260,6 @@ public class LireRequestHandler extends RequestHandlerBase {
         numberOfCandidateResults = req.getParams().getInt("candidates", DEFAULT_NUMBER_OF_CANDIDATES);
         useMetricSpaces = req.getParams().getBool("ms", DEFAULT_USE_METRIC_SPACES);
 
-        HashTermStatistics.addToStatistics(req.getSearcher(), paramField);
 
         GlobalFeature feat = null;
         int[] hashes = null;
@@ -275,11 +275,10 @@ public class LireRequestHandler extends RequestHandlerBase {
                 feat = (GlobalFeature) FeatureRegistry.getClassForHashField(paramField).newInstance();
             }
             feat.extract(img);
-            hashes = BitSampling.generateHashes(feat.getFeatureVector());
-
 
             if (!useMetricSpaces) {
                 // Re-generating the hashes to save space (instead of storing them in the index)
+                HashTermStatistics.addToStatistics(req.getSearcher(), paramField);
                 hashes = BitSampling.generateHashes(feat.getFeatureVector());
                 query = createQuery(hashes, paramField, numberOfQueryTerms);
             } else if (MetricSpaces.supportsFeature(feat)) {
@@ -329,10 +328,13 @@ public class LireRequestHandler extends RequestHandlerBase {
             }
             feat.extract(img);
             rsp.add("histogram", Base64.encodeBase64String(feat.getByteArrayRepresentation()));
-            int[] hashes = BitSampling.generateHashes(feat.getFeatureVector());
-            List<String> hashStrings = orderHashes(hashes, paramField);
-            rsp.add("hashes", hashStrings);
-            if (MetricSpaces.supportsFeature(feat)) rsp.add("ms", MetricSpaces.generateHashString(feat));
+            if (req.getSearcher().getSchema().hasExplicitField(paramField)) { // only if the field is available.
+                int[] hashes = BitSampling.generateHashes(feat.getFeatureVector());
+                List<String> hashStrings = orderHashes(hashes, paramField);
+                rsp.add("hashes", hashStrings);
+            }
+            if (MetricSpaces.supportsFeature(feat))
+                rsp.add("ms", MetricSpaces.generateHashString(feat));
         } catch (Exception e) {
             rsp.add("Error", "Error reading image from URL: " + paramUrl + ": " + e.getMessage());
             e.printStackTrace();

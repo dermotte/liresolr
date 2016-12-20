@@ -154,7 +154,7 @@ public class IndexingFromTextFile extends AbstractDocumentWriter {
                     document.put("title", data.id);
                     for (Iterator<GlobalFeature> iterator = data.features.iterator(); iterator.hasNext(); ) {
                         GlobalFeature f = iterator.next();
-                        document.put(FeatureRegistry.getCodeForClass(f.getClass()),
+                        document.put(FeatureRegistry.getCodeForClass(f.getClass()) + FeatureRegistry.featureFieldPostfix,
                                 org.apache.commons.codec.binary.Base64.encodeBase64String(f.getByteArrayRepresentation()));
                         if (doHashingBitSampling) {
                             document.put(FeatureRegistry.getCodeForClass(f.getClass()) + FeatureRegistry.hashFieldPostfix,

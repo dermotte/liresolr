@@ -24,6 +24,7 @@ public class HashingMetricSpacesManager {
             MetricSpaces.loadReferencePoints(new GZIPInputStream(classloader.getResourceAsStream("metricspaces/logos-ca-ee_FCTH.msd.gz")));
             MetricSpaces.loadReferencePoints(new GZIPInputStream(classloader.getResourceAsStream("metricspaces/logos-ca-ee_OpponentHistogram.msd.gz")));
             MetricSpaces.loadReferencePoints(new GZIPInputStream(classloader.getResourceAsStream("metricspaces/logos-ca-ee_PHOG.msd.gz")));
+            MetricSpaces.loadReferencePoints(new GZIPInputStream(classloader.getResourceAsStream("metricspaces/jpg_us_filter_JCD.msd.gz")));
         } catch (Exception e) {
             e.printStackTrace();
         }
