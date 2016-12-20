@@ -15,11 +15,12 @@ public class SplitTextFile {
 
     public static final String helpMessage = "Help\n" +
             "====\n" +
-            "$> SplitTextFile -i <infile.xml> -l <lines> [-x]\n" +
+            "$> SplitTextFile -i <infile.xml> -l <lines> [-x] [-d <directory>]\n" +
             "\n" +
             "-i ... file to read, output will numbered like infileXXX.xml\n" +
             "-l ... number of lines per file\n" +
-            "-x ... create a shell script for indexing like infile-index.sh\n";
+            "-x ... create a shell script for indexing like infile-index.sh\n" +
+            "-d ... output directory (without trailing '/')\n";
 
     public static int charBufferSize = 1024 * 1024 * 128; // 128 MB
 
@@ -42,6 +43,9 @@ public class SplitTextFile {
         int count = 0;
         int filenum = 0;
         String filePattern = FilenameUtils.getBaseName(p.getProperty("-i")) + "%03d." + FilenameUtils.getExtension(p.getProperty("-i"));
+        if (p.get("-d")!=null) {
+            filePattern = p.getProperty("-d") + '/' + filePattern;
+        }
         String fileExec = FilenameUtils.getBaseName(p.getProperty("-i")) + "-index.sh";
         String currentFileName = String.format(filePattern, filenum);
         System.out.printf("Writing file %s ...\n", currentFileName);
@@ -91,9 +95,10 @@ public class SplitTextFile {
 /*
 Help
 ====
-$> SplitTextFile -i <infile.xml> -l <lines> [-x]
+$> SplitTextFile -i <infile.xml> -l <lines> [-x] [-d <directory>]
 
 -i ... file to read, output will numbered like infileXXX.xml
 -l ... number of lines per file
 -x ... create a shell script for indexing like infile-index.sh
+-d ... output directory (without trailing '/')
  */
