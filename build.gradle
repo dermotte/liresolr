@@ -80,7 +80,8 @@ jar {
  * Deploys the results from the jar task to Solr.
  */
 task deployToSolr(type: Copy, dependsOn: jar) {
-    String path = 'C:/Java/Apps/solr-6.3.0/server/solr-webapp/webapp/WEB-INF/lib/'
+    delete './dist'
+    String path = './dist'
 //    String path = 'D:/Java/Libs/solr-6.3.0/server/solr-webapp/webapp/WEB-INF/lib/'
     String lsJar = 'liresolr.jar'
     String liJar = 'lire.jar'

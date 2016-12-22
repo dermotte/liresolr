@@ -115,33 +115,12 @@ Use of the request handler is detailed above.
 
 You'll also need the respective fields in the `schema.xml` (in the base configuration in Solr 6.3.0 it is called `managed-schema`) file:
 
-    <!-- file path for ID -->
+    <!-- file path for ID, should be there already -->
     <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false" />
-    <!-- the sole file name -->
+    <!-- the title of the image, e.g. the file name -->
     <field name="title" type="text_general" indexed="true" stored="true" multiValued="true"/>
-    <!-- Edge Histogram -->
-    <field name="eh_ha" type="text_ws" indexed="true" stored="false" required="false"/>
-    <field name="eh_hi" type="binaryDV"  indexed="false" stored="true" required="false"/>
-    <!-- ColorLayout -->
-    <field name="cl_ha" type="text_ws" indexed="true" stored="false" required="false"/>
-    <field name="cl_hi" type="binaryDV"  indexed="false" stored="true" required="false"/>
-    <!-- PHOG -->
-    <field name="ph_ha" type="text_ws" indexed="true" stored="false" required="false"/>
-    <field name="ph_hi" type="binaryDV"  indexed="false" stored="true" required="false"/>
-    <!-- JCD -->
-    <field name="jc_ha" type="text_ws" indexed="true" stored="false" required="false"/>
-    <field name="jc_hi" type="binaryDV"  indexed="false" stored="true" required="false"/>
-    <!-- OpponentHistogram -->
-    <!--field name="oh_ha" type="text_ws" indexed="true" stored="false" required="false"/-->
-    <!--field name="oh_hi" type="binaryDV"  indexed="false" stored="true" required="false"/-->
-
-
-Alternatively you can use dynamic fields:
-
-    <!-- file path for ID -->
-    <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false" />
-    <!-- the sole file name -->
-    <field name="title" type="text_general" indexed="true" stored="true" multiValued="true"/>
+    <!-- the url where the image is to be downloaded -->
+    <field name="imageurl" type="string" indexed="true" stored="true" multiValued="false"/>
     <!-- Dynamic fields for LIRE Solr -->
     <dynamicField name="*_ha" type="text_ws" indexed="true" stored="false"/> <!-- if you are using BitSampling --> 
     <dynamicField name="*_ms" type="text_ws" indexed="true" stored="false"/> <!-- if you are using Metric Spaces Indexing -->
