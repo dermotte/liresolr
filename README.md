@@ -120,7 +120,7 @@ You'll also need the respective fields in the `schema.xml` (in the base configur
     <!-- the title of the image, e.g. the file name -->
     <field name="title" type="text_general" indexed="true" stored="true" multiValued="true"/>
     <!-- the url where the image is to be downloaded -->
-    <field name="imageurl" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="imgurl" type="string" indexed="true" stored="true" multiValued="false"/>
     <!-- Dynamic fields for LIRE Solr -->
     <dynamicField name="*_ha" type="text_ws" indexed="true" stored="false"/> <!-- if you are using BitSampling --> 
     <dynamicField name="*_ms" type="text_ws" indexed="true" stored="false"/> <!-- if you are using Metric Spaces Indexing -->
