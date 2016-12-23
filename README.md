@@ -6,7 +6,7 @@ This is a Solr plugin for the LIRE content based image retrieval library, so bas
 The LIRE Solr plugin includes a RequestHandler for searching, an EntityProcessor for indexing,
 a ValeSource Parser for content based re-ranking and a parallel indexing application.
 
-An outdated demo can be found at [http://demo-itec.uni-klu.ac.at/liredemo/](http://demo-itec.uni-klu.ac.at/liredemo/)
+An outdated demo can be found at [http://demo-itec.uni-klu.ac.at/liredemo/](http://demo-itec.uni-klu.ac.at/liredemo/). If you want to give it a try yourself, there is a [docker image](https://hub.docker.com/r/dermotte/liresolr/), which you use to run a pre-configured core on a Solr server.
 
 If you need help on the plugin, please use the mailing list at [lire-dev mailing list](http://groups.google.com/group/lire-dev) to ask questions. Additional documentation is available on [src/main/docs/index.md](src/main/docs/index.md) If you need help with your project, please contact me, we also offer consulting services.
 
