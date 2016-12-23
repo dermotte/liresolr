@@ -37,7 +37,7 @@
  *     http://www.semanticmetadata.net/lire, http://www.lire-project.net
  */
 
-package net.semanticmetadata.lire.solr;
+package net.semanticmetadata.lire.solr.indexing;
 
 import net.semanticmetadata.lire.imageanalysis.features.GlobalFeature;
 import net.semanticmetadata.lire.imageanalysis.features.global.ColorLayout;
@@ -45,8 +45,10 @@ import net.semanticmetadata.lire.imageanalysis.features.global.EdgeHistogram;
 import net.semanticmetadata.lire.imageanalysis.features.global.JCD;
 import net.semanticmetadata.lire.imageanalysis.features.global.PHOG;
 import net.semanticmetadata.lire.indexers.hashing.BitSampling;
+import net.semanticmetadata.lire.indexers.hashing.MetricSpaces;
 import net.semanticmetadata.lire.indexers.parallel.WorkItem;
-import net.semanticmetadata.lire.solr.indexing.ImageDataProcessor;
+import net.semanticmetadata.lire.solr.FeatureRegistry;
+import net.semanticmetadata.lire.solr.HashingMetricSpacesManager;
 import net.semanticmetadata.lire.utils.ImageUtils;
 import org.apache.commons.codec.binary.Base64;
 
@@ -90,7 +92,10 @@ public class ParallelSolrIndexer implements Runnable {
     //    private static HashMap<Class, String> classToPrefix = new HashMap<Class, String>(5);
     private boolean force = false;
     private static boolean individualFiles = false;
-    private static int numberOfThreads = 4;
+    private static int numberOfThreads = 8;
+
+    private boolean useMetricSpaces = false, useBitSampling = true;
+
     LinkedBlockingQueue<WorkItem> images = new LinkedBlockingQueue<WorkItem>(maxCacheSize);
     boolean ended = false;
     int overallCount = 0;
@@ -111,6 +116,8 @@ public class ParallelSolrIndexer implements Runnable {
         listOfFeatures.add(ColorLayout.class);
         listOfFeatures.add(EdgeHistogram.class);
         listOfFeatures.add(JCD.class);
+
+        HashingMetricSpacesManager.init(); // load reference points from disk.
 
     }
 
@@ -183,6 +190,8 @@ public class ParallelSolrIndexer implements Runnable {
                 }
             } else if (arg.startsWith("-p")) {
                 e.setPreprocessing(true);
+            } else if (arg.startsWith("-l")) {
+                e.setUseMetricSpaces(true);
             } else if (arg.startsWith("-h")) {
                 // help
                 printHelp();
@@ -209,7 +218,7 @@ public class ParallelSolrIndexer implements Runnable {
     private static void printHelp() {
         System.out.println("This help text is shown if you start the ParallelSolrIndexer with the '-h' option.\n" +
                 "\n" +
-                "$> ParallelSolrIndexer -i <infile> [-o <outfile>] [-n <threads>] [-f] [-p] [-m <max_side_length>] [-r <full class name>] \\\\ \n" +
+                "$> ParallelSolrIndexer -i <infile> [-o <outfile>] [-n <threads>] [-f] [-p] [-l] [-m <max_side_length>] [-r <full class name>] \\\\ \n" +
                 "         [-y <list of feature classes>]\n" +
                 "\n" +
                 "Note: if you don't specify an outfile just \".xml\" is appended to the input image for output. So there will be one XML\n" +
@@ -218,6 +227,7 @@ public class ParallelSolrIndexer implements Runnable {
                 "-n ... number of threads should be something your computer can cope with. default is 4.\n" +
                 "-f ... forces overwrite of outfile\n" +
                 "-p ... enables image processing before indexing (despeckle, trim white space)\n" +
+                "-l ... disables BitSampling and uses MetricSpaces instead.\n" +
                 "-m ... maximum side length of images when indexed. All bigger files are scaled down. default is 512.\n" +
                 "-r ... defines a class implementing net.semanticmetadata.lire.solr.indexing.ImageDataProcessor\n" +
                 "       that provides additional fields.\n" +
@@ -289,6 +299,9 @@ public class ParallelSolrIndexer implements Runnable {
             System.err.println(outFile.getName() + " already exists. Please delete or choose another outfile.");
             configured = false;
         }
+        if (imageDataProcessor == null) {
+            imageDataProcessor = SimpleBackslashReplacer.class;
+        }
         return configured;
     }
 
@@ -350,6 +363,11 @@ public class ParallelSolrIndexer implements Runnable {
                 e.printStackTrace();
             }
         }
+    }
+
+    public void setUseMetricSpaces(boolean useMetricSpaces) {
+        this.useMetricSpaces = useMetricSpaces;
+        this.useBitSampling = !useMetricSpaces;
     }
 
     public boolean isPreprocessing() {
@@ -521,13 +539,21 @@ public class ParallelSolrIndexer implements Runnable {
                                 feature.extract(img);
                                 String histogramField = FeatureRegistry.codeToFeatureField(featureCode);
                                 String hashesField = FeatureRegistry.codeToHashField(featureCode);
+                                String metricSpacesField = FeatureRegistry.codeToMetricSpacesField(featureCode);
 
                                 sb.append("<field name=\"" + histogramField + "\">");
                                 sb.append(Base64.encodeBase64String(feature.getByteArrayRepresentation()));
                                 sb.append("</field>");
-                                sb.append("<field name=\"" + hashesField + "\">");
-                                sb.append(arrayToString(BitSampling.generateHashes(feature.getFeatureVector())));
-                                sb.append("</field>");
+                                if (useBitSampling) {
+                                    sb.append("<field name=\"" + hashesField + "\">");
+                                    sb.append(arrayToString(BitSampling.generateHashes(feature.getFeatureVector())));
+                                    sb.append("</field>");
+                                }
+                                if (useMetricSpaces && MetricSpaces.supportsFeature(feature)) {
+                                    sb.append("<field name=\"" + metricSpacesField + "\">");
+                                    sb.append(MetricSpaces.generateHashString(feature));
+                                    sb.append("</field>");
+                                }
                             }
                         }
                         sb.append("</doc>\n");

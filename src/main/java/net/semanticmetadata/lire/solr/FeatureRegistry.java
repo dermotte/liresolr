@@ -28,8 +28,9 @@ public class FeatureRegistry {
 
 
     // Constants.
-    private static final String featureFieldPostfix = "_hi";   // contains the histogram
-    private static final String hashFieldPostfix = "_ha";      // contains the hash
+    public static final String featureFieldPostfix = "_hi";   // contains the histogram
+    public static final String hashFieldPostfix = "_ha";      // contains the hash
+    public static final String metricSpacesFieldPostfix = "_ms";      // contains the hash
 
     static {
         // initial adding of the supported features:
@@ -42,6 +43,7 @@ public class FeatureRegistry {
 
         // additional global features
         codeToClass.put("ac", AutoColorCorrelogram.class);
+        codeToClass.put("ad", ACCID.class);
         codeToClass.put("ce", CEDD.class);
         codeToClass.put("fc", FCTH.class);
         codeToClass.put("fo", FuzzyOpponentHistogram.class);
@@ -123,6 +125,10 @@ public class FeatureRegistry {
 
     public static String codeToHashField(String code) {
         return code + hashFieldPostfix;
+    }
+
+    public static String codeToMetricSpacesField(String code) {
+        return code + metricSpacesFieldPostfix;
     }
 
     public static String codeToFeatureField(String code) {

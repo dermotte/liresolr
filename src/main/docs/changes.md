@@ -1,4 +1,11 @@
-# LireSolr Changes
+# LireSolr Change Log
+
+**2016-12-19**
+* Generating import XML files from text file (extraction in LIRE, output can be metric spaces file).
+* Support for MetricSpaces indexing & search in Solr & ParallelSolrIndexer, ie. dynamic field `*_ms`.
+* Re-visited LireValueSource implementation.
+* Updated documentation.
+* fixed FilterQuery.
 
 **2016-12-08**
 * automated build numbering on *gradle jar*.
