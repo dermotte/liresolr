@@ -1,5 +1,11 @@
 # LireSolr Change Log
 
+**2016-12-27**
+* Docker integration
+* Sample core and documents
+* Flickr download tool to create test data in an easy way. 
+* Fixed sample HTML file for random photo display.
+
 **2016-12-19**
 * Generating import XML files from text file (extraction in LIRE, output can be metric spaces file).
 * Support for MetricSpaces indexing & search in Solr & ParallelSolrIndexer, ie. dynamic field `*_ms`.

@@ -230,15 +230,14 @@ public class LireRequestHandler extends RequestHandlerBase {
         DirectoryReader indexReader = searcher.getIndexReader();
         double maxDoc = indexReader.maxDoc();
         int paramRows = req.getParams().getInt("rows", defaultNumberOfResults);
+
         LinkedList list = new LinkedList();
         while (list.size() < paramRows) {
-            HashMap m = new HashMap(2);
-            Document d = indexReader.document((int) Math.floor(Math.random() * maxDoc));
-            m.put("id", d.getValues("id")[0]);
-            m.put("title", d.getValues("title")[0]);
-            list.add(m);
+            Document d = searcher.doc((int) Math.floor(Math.random() * maxDoc));
+            list.add(d);
         }
-        rsp.add("docs", list);
+        rsp.addResponse(list);
+//        rsp.add("docs", list);
     }
 
     /**
