@@ -27,27 +27,48 @@
     <script type="text/javascript" src="gridify.js"></script>
 
     <script language="JavaScript">
-        serverUrlPrefix = "lire/";
+        serverUrlPrefix = "http://localhost:8983/solr/lire/";
+        // serverUrlPrefix = "lire/";
 
         function printResults(docs) {
             var last = $("#imagegrid");
             for (var i = 0; i < docs.length; i++) {
                 myID = docs[i].id.toString();
                 myUrl = docs[i].imgurl.toString();
-                last.append('<img class="img-responsive" src="' + myUrl + '">');
+                last.append('<div class="imageDiv text-center">' +
+                    '<a href="javascript:search(\'' + myID + '\', \'cl_ha\')">' +
+                    '<img class="img-responsive" src="' + myUrl + '"></a>' +
+                    '<div class="well" style="margin-top: 6px">' +
+                    '<a href="javascript:search(\'' + myID + '\', \'sc_ha\')" class="btn btn-primary btn-xs">SC</a> ' +
+                    '<a href="javascript:search(\'' + myID + '\', \'ph_ha\')" class="btn btn-primary btn-xs">PH</a> ' +
+                    '<a href="javascript:search(\'' + myID + '\', \'ce_ha\')" class="btn btn-primary btn-xs">CE</a> ' +
+                    '<a href="javascript:search(\'' + myID + '\', \'oh_ha\')" class="btn btn-primary btn-xs">OH</a> ' +
+                    '</div>' +
+                    '</div>');
                 // console.log(myUrl);
                 // make it a grid
                 var options =
                     {
-                        srcNode: 'img',             // grid items (class, node)
+                        srcNode: '.imageDiv',             // grid items (class, node)
                         margin: '20px',             // margin in pixel, default: 0px
-                        width: '150px',             // grid item width in pixel, default: 220px
+                        width: '200px',             // grid item width in pixel, default: 220px
                         max_width: '',              // dynamic gird item width if specified, (pixel)
                         resizable: true,            // re-layout if window resize
                         transition: 'all 0.5s ease' // support transition for CSS3, default: all 0.5s ease
                     }
                 document.querySelector('.grid').gridify(options);
             }
+        }
+
+        function search(docID, feature) {
+            $(".imageDiv").remove();
+            $("#perf").html("<i class=\"fa fa-spinner fa-pulse fa-3x fa-fw\"></i>");
+
+            $.getJSON(serverUrlPrefix + "lireq?ms=false&fl=*&field=" + feature + "&id=" + docID, function (myResult) {
+                $("#perf").html("Index search time: " + myResult.responseHeader.QTime + " ms");
+                console.log(myResult);
+                printResults(myResult.docs);
+            });
         }
 
         $(document).ready(function () {

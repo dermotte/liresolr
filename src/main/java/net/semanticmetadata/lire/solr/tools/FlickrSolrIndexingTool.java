@@ -22,7 +22,7 @@ import java.util.concurrent.Executors;
  */
 public class FlickrSolrIndexingTool {
     static String helpMessage = "$> FlickrSolrIndexingTool -o <outfile.xml> [-n <number_of_photos>]";
-    private static int numThreads = 4;
+    private static int numThreads = 8;
 
     public static void main(String[] args) throws ParserConfigurationException, SAXException, IOException, InterruptedException {
         BitSampling.readHashFunctions();

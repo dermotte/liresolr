@@ -96,6 +96,7 @@ Parameters:
 
 -   **extract** .. the URL of the image. Note that the image has to be accessible by the web server Java has to be able to read it.
 -   **field** .. gives the feature field to search for (optional, default=cl_ha, values see above)
+-   **ms** .. defines if you want to use MetricSpaces. Setting it to false gives you BitSampling hashes (default=true, default=cl_ha, values see above)
 
 
 Installation

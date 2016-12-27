@@ -230,14 +230,17 @@ public class LireRequestHandler extends RequestHandlerBase {
         DirectoryReader indexReader = searcher.getIndexReader();
         double maxDoc = indexReader.maxDoc();
         int paramRows = req.getParams().getInt("rows", defaultNumberOfResults);
-
-        LinkedList list = new LinkedList();
-        while (list.size() < paramRows) {
-            Document d = searcher.doc((int) Math.floor(Math.random() * maxDoc));
-            list.add(d);
+        if (paramRows < maxDoc) paramRows = (int) Math.floor(maxDoc);
+        if (maxDoc < 1)
+            rsp.add("Error", "No documents in index");
+        else {
+            LinkedList list = new LinkedList();
+            while (list.size() < paramRows) {
+                Document d = searcher.doc((int) Math.floor(Math.random() * maxDoc));
+                list.add(d);
+            }
+            rsp.addResponse(list);
         }
-        rsp.addResponse(list);
-//        rsp.add("docs", list);
     }
 
     /**
@@ -314,6 +317,7 @@ public class LireRequestHandler extends RequestHandlerBase {
         SolrParams params = req.getParams();
         String paramUrl = params.get("extract");
         String paramField = req.getParams().get("field", "cl_ha");
+        useMetricSpaces = req.getParams().getBool("ms", DEFAULT_USE_METRIC_SPACES);
         GlobalFeature feat;
         // wrapping the whole part in the try
         try {
@@ -327,13 +331,18 @@ public class LireRequestHandler extends RequestHandlerBase {
             }
             feat.extract(img);
             rsp.add("histogram", Base64.encodeBase64String(feat.getByteArrayRepresentation()));
-            if (req.getSearcher().getSchema().hasExplicitField(paramField)) { // only if the field is available.
+            if (!useMetricSpaces) { // only if the field is available.
+                HashTermStatistics.addToStatistics(req.getSearcher(), paramField);
                 int[] hashes = BitSampling.generateHashes(feat.getFeatureVector());
                 List<String> hashStrings = orderHashes(hashes, paramField);
                 rsp.add("hashes", hashStrings);
             }
-            if (MetricSpaces.supportsFeature(feat))
-                rsp.add("ms", MetricSpaces.generateHashString(feat));
+            if (MetricSpaces.supportsFeature(feat)) {
+                rsp.add("ms-list", MetricSpaces.generateHashList(feat));
+                int queryLength = (int) StatsUtils.clamp(DEFAULT_NUMBER_OF_QUERY_TERMS * MetricSpaces.getPostingListLength(feat),
+                        3, MetricSpaces.getPostingListLength(feat));
+                rsp.add("ms-query", MetricSpaces.generateBoostedQuery(feat, queryLength));
+            }
         } catch (Exception e) {
             rsp.add("Error", "Error reading image from URL: " + paramUrl + ": " + e.getMessage());
             e.printStackTrace();
@@ -472,6 +481,7 @@ public class LireRequestHandler extends RequestHandlerBase {
                     // all fields
                     for (IndexableField field : result.getDocument().getFields()) {
                         String tmpField = field.name();
+
                         if (result.getDocument().getFields(tmpField).length > 1) {
                             m.put(result.getDocument().getFields(tmpField)[0].name(), result.getDocument().getValues(tmpField));
                         } else if (result.getDocument().getFields(tmpField).length > 0) {
