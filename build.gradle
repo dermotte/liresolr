@@ -79,7 +79,7 @@ jar {
 /**
  * Deploys the results from the jar task to Solr.
  */
-task deployToSolr(type: Copy, dependsOn: jar) {
+task distForSolr(type: Copy, dependsOn: jar) {
     delete './dist'
     String path = './dist'
 //    String path = 'D:/Java/Libs/solr-6.3.0/server/solr-webapp/webapp/WEB-INF/lib/'

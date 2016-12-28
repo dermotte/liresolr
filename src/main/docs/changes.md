@@ -1,5 +1,10 @@
 # LireSolr Change Log
 
+**2016-12-28**
+* Added gradle wrapper to the repo.
+* Removed debug information and switched to ColorLayout as default feature in LireSourceValue
+* 6.3.0b2 release for Docker image.
+
 **2016-12-27**
 * Docker integration
 * Sample core and documents

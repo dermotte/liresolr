@@ -40,6 +40,7 @@
 package net.semanticmetadata.lire.solr;
 
 import net.semanticmetadata.lire.imageanalysis.features.GlobalFeature;
+import net.semanticmetadata.lire.imageanalysis.features.global.ColorLayout;
 import net.semanticmetadata.lire.imageanalysis.features.global.EdgeHistogram;
 import org.apache.lucene.index.*;
 import org.apache.lucene.queries.function.FunctionValues;
@@ -82,8 +83,8 @@ public class LireValueSource extends ValueSource {
 
         // get the feature from the feature registry.
         if (field == null) {
-            feature = new EdgeHistogram();
-            tmpFeature = new EdgeHistogram();
+            feature = new ColorLayout();
+            tmpFeature = new ColorLayout();
         } else {
             try {
                 if (FeatureRegistry.getClassForFeatureField(field) != null) {// check if feature is registered.
@@ -100,7 +101,7 @@ public class LireValueSource extends ValueSource {
         }
 
         // debug ...
-        System.out.println("Setting " + feature.getClass().getName() + " to " + Base64.byteArrayToBase64(hist, 0, hist.length));
+        // System.out.println("Setting " + feature.getClass().getName() + " to " + Base64.byteArrayToBase64(hist, 0, hist.length));
 
         // adding all parameters to a string to create a hash.
         objectHashBase = field + Arrays.toString(hist) + maxDistance;
