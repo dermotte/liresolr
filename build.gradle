@@ -98,3 +98,21 @@ task distForSolr(type: Copy, dependsOn: jar) {
     into path
 }
 
+task prepareForDockerImage(type: Copy, dependsOn: distForSolr) {
+    String path = './liresolr-docker-build'
+    delete path
+    String lsJar = 'liresolr.jar'
+    String liJar = 'lire.jar'
+    from('build/libs'){
+        include 'LireSolr*.jar'
+        rename {  lsJar }
+    }
+    from('lib'){
+        include 'LIRE-*.jar'
+        rename { liJar }
+    }
+    into path
+    from ('src/main/web') into path
+    from ('src/main/docker') into path
+}
+
