@@ -58,7 +58,7 @@ public class FlickrPhoto implements Runnable {
         BufferedImage image = ImageIO.read(new URL(photourl));
         bw.append("<field name=\"id\">" + url + "</field>");
         if (title.length() > 0)
-            bw.append("<field name=\"title\">" + title.replaceAll("&(?!amp;)", "&amp;") + "</field>");
+            bw.append("<field name=\"title\">" + title.replaceAll("&(?!amp;)", "&amp;").replaceAll("<", "&lt;") + "</field>");
         else
             bw.append("<field name=\"title\">" + url + "</field>");
         bw.append("<field name=\"imgurl\">" + photourl + "</field>");
