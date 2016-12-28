@@ -65,7 +65,7 @@ public class LireValueSource extends ValueSource {
     String field = "cl_hi";  // default field
     byte[] histogramData;
     GlobalFeature feature, tmpFeature;
-    double maxDistance = -1;
+    double maxDistance = Double.MAX_VALUE;
     String objectHashBase = null; // used to store the combination of parameters to create a way to counter caching of functions with different function values.
 
     /**
