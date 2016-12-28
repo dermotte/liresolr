@@ -230,7 +230,7 @@ public class LireRequestHandler extends RequestHandlerBase {
         DirectoryReader indexReader = searcher.getIndexReader();
         double maxDoc = indexReader.maxDoc();
         int paramRows = req.getParams().getInt("rows", defaultNumberOfResults);
-        if (paramRows < maxDoc) paramRows = (int) Math.floor(maxDoc);
+        if (paramRows > maxDoc) paramRows = (int) Math.floor(maxDoc);
         if (maxDoc < 1)
             rsp.add("Error", "No documents in index");
         else {
