@@ -3,10 +3,9 @@ LIRE Solr Integration Project
 
 This is a Solr plugin for the LIRE content based image retrieval library, so basically it's for indexing images and then finding similar (looking) ones. The original library can be found at [Github](https://github.com/dermotte/lire)
 
-The LIRE Solr plugin includes a RequestHandler for searching, an EntityProcessor for indexing,
-a ValeSource Parser for content based re-ranking and a parallel indexing application.
+The LIRE Solr plugin includes a `RequestHandler` for searching, an `EntityProcessor` for indexing, a `ValueSource` Parser for content based re-ranking and a parallel indexing application.
 
-An outdated demo can be found at [http://demo-itec.uni-klu.ac.at/liredemo/](http://demo-itec.uni-klu.ac.at/liredemo/). If you want to give it a try yourself, there is a [docker image](https://hub.docker.com/r/dermotte/liresolr/), which you use to run a pre-configured core on a Solr server.
+An outdated demo can be found at [http://demo-itec.uni-klu.ac.at/liredemo/](http://demo-itec.uni-klu.ac.at/liredemo/). If you want to give it a try yourself, there is a [docker image](https://hub.docker.com/r/dermotte/liresolr/), which you use to run a pre-configured core on a Solr server. There's also a tool to create import XML files from Flickr. More information is available at [src/main/docs/docker.md](src/main/docs/docker.md).
 
 If you need help on the plugin, please use the mailing list at [lire-dev mailing list](http://groups.google.com/group/lire-dev) to ask questions. Additional documentation is available on [src/main/docs/index.md](src/main/docs/index.md) If you need help with your project, please contact me, we also offer consulting services.
 
@@ -14,7 +13,7 @@ If you use LIRE Solr for scientific purposes, please cite the following paper:
 
 > *Mathias Lux and Glenn Macstravic* "The LIRE Request Handler: A Solr Plug-In for Large Scale Content Based Image Retrieval." *MultiMedia Modeling. Springer International Publishing, 2014*. [Springer](http://link.springer.com/chapter/10.1007/978-3-319-04117-9_39)
 
-The request handler supports the following different types of queries
+The `RequestHandler` supports the following different types of queries
 
 1.  Get random images ...
 2.  Get images that are looking like the one with id ...
@@ -24,7 +23,7 @@ The request handler supports the following different types of queries
 
 Preliminaries
 -------------
-Supported values for feature field parameters, e.g. `lireq?field=cl`, see also LIRE and the documentation of features there:
+Supported values for feature field parameters, e.g. `lireq?field=cl` are ...
 
 -  **ph** .. PHOG (pyramid histogram of oriented gradients)
 -  **oh** .. OpponentHistogram (simple color histtogram in the opponent color space)
@@ -38,6 +37,8 @@ Supported values for feature field parameters, e.g. `lireq?field=cl`, see also L
 -  **pc** .. SPCEDD (pyramid histogram of CEDD)
 -  **fo** .. FuzzyOpponentHistogram (fuzzy color histogram)
 
+Also consult the Lire project and the documentation of features there. You can also extend the list of features by changing the `FeatureRegistry` in the LireSolr source.
+
 The field parameter (partially) works with the LIRE request handler:
 
 -  **fl** .. Fields, give them as a comma or space separated list, like "fl=title,id,score". Note that "*" is denoting all fields and score adds the distance (which already comes with the "d" fields) in an additional score field.
@@ -45,7 +46,7 @@ The field parameter (partially) works with the LIRE request handler:
 
 Getting random images
 ---------------------
-Returns randomly chosen images from the index. While it does not seem extremely helpful, it's actuall great to find images to be used for example queries. 
+Returns randomly chosen images from the index. While it does not seem extremely helpful, it's actually great to find images to be used for example queries. 
 
 Parameters:
 
@@ -79,8 +80,7 @@ Parameters:
 
 Search by feature vector
 ------------------------
-Returns an image that looks like the one the given features were extracted. This method is used if the client
-extracts the features from the image, which makes sense if the image should not be submitted.
+Returns an image that looks like the one the given features were extracted. This method is used if the client extracts the features from the image, which makes sense if the image should not be submitted.
 
 Parameters:
 
@@ -94,7 +94,7 @@ Parameters:
 
 Extracting histograms
 ---------------------
-Extracts the histogram and the hashes of an image for use with the lire sorting function.
+Extracts the histogram and the hashes of an image for use with the Lire sorting function.
 
 Parameters:
 
@@ -102,49 +102,12 @@ Parameters:
 -   **field** .. gives the feature field to search for (optional, default=cl_ha, values see above)
 -   **ms** .. defines if you want to use MetricSpaces. Setting it to false gives you BitSampling hashes (default=true, default=cl_ha, values see above)
 
-
-Installation
-============
-
-We assume you have a Solr server installed and running and you have already added a core. First run the dist task by `gradlew distForSolr` command in liresolr folder to create a plugin jar. Then copy jars: `cp ./dist/*.jar /opt/solr/server/solr-webapp/webapp/WEB-INF/lib/`. Then add the new request handler has to be registered in the `solrconfig.xml` file:
-
-     <requestHandler name="/lireq" class="net.semanticmetadata.lire.solr.LireRequestHandler">
-        <lst name="defaults">
-          <str name="echoParams">explicit</str>
-          <str name="wt">json</str>
-          <str name="indent">true</str>
-        </lst>
-     </requestHandler>
-
-Use of the request handler is detailed above.
-
-You'll also need the respective fields in the `managed-schema` (in the base configuration in Solr 6.3.0 it is called `managed-schema`) file:
-
-    <!-- file path for ID, should be there already -->
-    <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false" />
-    <!-- the title of the image, e.g. the file name -->
-    <field name="title" type="text_general" indexed="true" stored="true" multiValued="true"/>
-    <!-- the url where the image is to be downloaded -->
-    <field name="imgurl" type="string" indexed="true" stored="true" multiValued="false"/>
-    <!-- Dynamic fields for LIRE Solr -->
-    <dynamicField name="*_ha" type="text_ws" indexed="true" stored="false"/> <!-- if you are using BitSampling --> 
-    <dynamicField name="*_ms" type="text_ws" indexed="true" stored="false"/> <!-- if you are using Metric Spaces Indexing -->
-    <dynamicField name="*_hi" type="binaryDV" indexed="false" stored="true"/>
-
-Do not forget to add the custom field at the very same file:
-
-    <fieldtype name="binaryDV" class="net.semanticmetadata.lire.solr.BinaryDocValuesField"/>
-
-There is also a sort function based on LIRE. The function parser needs to be added to the
-`solarconfig.xml` file like this:
-
-      <valueSourceParser name="lirefunc"
-        class="net.semanticmetadata.lire.solr.LireValueSourceParser" />
-
-Then the function `lirefunc(arg1,arg2)` is available for function queries. Two arguments are necessary and are defined as:
+Function querioes with lirefunc
+-------------------------------
+The function `lirefunc(arg1,arg2)` is available for function queries. Two arguments are necessary and are defined as:
 
 -  Feature to be used for computing the distance between result and reference image. Possible values are {cl, ph, eh, jc}
--  Actual Base64 encoded feature vector of the reference image. It can be obtained by calling `LireFeature.getByteRepresentation()` and by Base64 encoding the resulting byte[] data.
+-  Actual Base64 encoded feature vector of the reference image. It can be obtained by calling `LireFeature.getByteRepresentation()` and by Base64 encoding the resulting byte[] data or by using the extract feature of the `RequestHandler`
 -  Optional maximum distance for those data items that cannot be processed, ie. don't feature the respective field.
 
 Note that if you send the parameters using an URL you might take extra care of the URL encoding, ie. white space, the "=" sign, etc.
@@ -160,14 +123,49 @@ If you extract the features yourself, use code like his one:
     ColorLayout cl = new ColorLayout();
     cl.extract(ImageIO.read(new File("...")));
     String arg1 = "cl";
-    String arg2 = Base64.encode(cl.getByteArrayRepresentation());
+    String arg2 = Base64.getEncoder().encodeToString(cl.getByteArrayRepresentation());
 
     // PHOG
     PHOG ph = new PHOG();
     ph.extract(ImageIO.read(new File("...")));
     String arg1 = "ph";
-    String arg2 = Base64.encode(ph.getByteArrayRepresentation());
+    String arg2 = Base64.getEncoder().encodeToString(ph.getByteArrayRepresentation());
 
+
+Installation
+============
+
+We assume you have a Solr server installed and running and you have already added a core. If not, check [src/main/docs/install.md](src/main/docs/install.md) or don't even try but go for the docker image. First run the dist task by `gradlew distForSolr` command in folder where the `build.gradle` file is found to create a plugin jar. Then copy jars: `cp ./dist/*.jar /opt/solr/server/solr-webapp/webapp/WEB-INF/lib/`. Then add the new `RequestHandler` and the `ValueSourceParser` have to be registered in the `solrconfig.xml` file:
+
+    <requestHandler name="/lireq" class="net.semanticmetadata.lire.solr.LireRequestHandler">
+        <lst name="defaults">
+            <str name="echoParams">explicit</str>
+            <str name="wt">json</str>
+            <str name="indent">true</str>
+        </lst>
+    </requestHandler>
+     
+    <valueSourceParser name="lirefunc" 
+        class="net.semanticmetadata.lire.solr.LireValueSourceParser" />
+
+Use of the request handler is detailed above.
+
+You'll also need the respective fields in the `managed-schema` file:
+
+    <!-- file path for ID, should be there already -->
+    <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false" />
+    <!-- the title of the image, e.g. the file name, optional -->
+    <field name="title" type="text_general" indexed="true" stored="true" multiValued="true"/>
+    <!-- the url where the image is to be downloaded, optional  -->
+    <field name="imgurl" type="string" indexed="true" stored="true" multiValued="false"/>
+    <!-- Dynamic fields for LIRE Solr -->
+    <dynamicField name="*_ha" type="text_ws" indexed="true" stored="false"/> <!-- if you are using BitSampling --> 
+    <dynamicField name="*_ms" type="text_ws" indexed="true" stored="false"/> <!-- if you are using Metric Spaces Indexing -->
+    <dynamicField name="*_hi" type="binaryDV" indexed="false" stored="true"/>
+
+Do not forget to add the custom field at the very same file:
+
+    <fieldtype name="binaryDV" class="net.semanticmetadata.lire.solr.BinaryDocValuesField"/>
 
 
 Indexing
@@ -266,4 +264,4 @@ Another way is to use the LireEntityProcessor. Then you have to reference the *s
         </document>
     </dataConfig>
 
-*Mathias Lux, 2016-12-17*
+*Mathias Lux, 2016-12-27*
