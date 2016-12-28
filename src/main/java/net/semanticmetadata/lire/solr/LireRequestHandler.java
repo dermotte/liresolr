@@ -156,6 +156,7 @@ public class LireRequestHandler extends RequestHandlerBase {
             int queryDocId = searcher.getFirstMatch(new Term("id", req.getParams().get("id")));
             // get the parameters
             String paramField = req.getParams().get("field", "cl_ha");
+            if (!paramField.endsWith("_ha")) paramField += "_ha";
             numberOfQueryTerms = req.getParams().getDouble("accuracy", DEFAULT_NUMBER_OF_QUERY_TERMS);
             numberOfCandidateResults = req.getParams().getInt("candidates", DEFAULT_NUMBER_OF_CANDIDATES);
             useMetricSpaces = req.getParams().getBool("ms", DEFAULT_USE_METRIC_SPACES);
@@ -257,6 +258,7 @@ public class LireRequestHandler extends RequestHandlerBase {
         SolrParams params = req.getParams();
         String paramUrl = params.get("url");
         String paramField = req.getParams().get("field", "cl_ha");
+        if (!paramField.endsWith("_ha")) paramField += "_ha";
         int paramRows = params.getInt("rows", defaultNumberOfResults);
         numberOfQueryTerms = req.getParams().getDouble("accuracy", DEFAULT_NUMBER_OF_QUERY_TERMS);
         numberOfCandidateResults = req.getParams().getInt("candidates", DEFAULT_NUMBER_OF_CANDIDATES);
@@ -317,6 +319,7 @@ public class LireRequestHandler extends RequestHandlerBase {
         SolrParams params = req.getParams();
         String paramUrl = params.get("extract");
         String paramField = req.getParams().get("field", "cl_ha");
+        if (!paramField.endsWith("_ha")) paramField += "_ha";
         useMetricSpaces = req.getParams().getBool("ms", DEFAULT_USE_METRIC_SPACES);
         GlobalFeature feat;
         // wrapping the whole part in the try
@@ -350,7 +353,7 @@ public class LireRequestHandler extends RequestHandlerBase {
     }
 
     /**
-     * Search based on the given image hashes. TODO: Add MetricSpaces here.
+     * Search based on the given image hashes.
      *
      * @param req
      * @param rsp
@@ -368,6 +371,7 @@ public class LireRequestHandler extends RequestHandlerBase {
 
         byte[] featureVector = Base64.decodeBase64(params.get("feature"));
         String paramField = req.getParams().get("field", "cl_ha");
+        if (!paramField.endsWith("_ha")) paramField += "_ha";
         int paramRows = params.getInt("rows", defaultNumberOfResults);
         numberOfQueryTerms = req.getParams().getDouble("accuracy", DEFAULT_NUMBER_OF_QUERY_TERMS);
         numberOfCandidateResults = req.getParams().getInt("candidates", DEFAULT_NUMBER_OF_CANDIDATES);

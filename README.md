@@ -24,15 +24,19 @@ The request handler supports the following different types of queries
 
 Preliminaries
 -------------
-Supported values for feature field parameters, e.g. lireq?field=cl_ha:
+Supported values for feature field parameters, e.g. `lireq?field=cl`, see also LIRE and the documentation of features there:
 
--  **cl_ha** .. ColorLayout
--  **ph_ha** .. PHOG
--  **oh_ha** .. OpponentHistogram
--  **eh_ha** .. EdgeHistogram
--  **jc_ha** .. JCD
--  **ce_ha** .. CEDD
--  **sc_ha** .. ScalableColor
+-  **ph** .. PHOG (pyramid histogram of oriented gradients)
+-  **oh** .. OpponentHistogram (simple color histtogram in the opponent color space)
+-  **cl** .. ColorLayout (from MPEG-7)
+-  **sc** .. ScalableColor (from MPEG-7)
+-  **eh** .. EdgeHistogram (from MPEG-7)
+-  **ce** .. CEDD (very compact and accurate joint descriptor)
+-  **fc** .. FCTH (more accurate, less compact than CEDD)
+-  **jc** .. JCD (joined descriptor of CEDD and FCTH)
+-  **ac** .. AutoColorCorrelogram (color to color correlation histogram)
+-  **pc** .. SPCEDD (pyramid histogram of CEDD)
+-  **fo** .. FuzzyOpponentHistogram (fuzzy color histogram)
 
 The field parameter (partially) works with the LIRE request handler:
 
@@ -102,7 +106,7 @@ Parameters:
 Installation
 ============
 
-First run the dist task by `gradle build` command in liresolr folder (gradle should be installed for this) to create a plugin jar. Then copy jars: `cp ./build/libs/*.jar ./lib/*.jar /opt/solr/server/solr-webapp/webapp/WEB-INF/lib/`. Then add the new request handler has to be registered in the `solrconfig.xml` file:
+We assume you have a Solr server installed and running and you have already added a core. First run the dist task by `gradlew distForSolr` command in liresolr folder to create a plugin jar. Then copy jars: `cp ./dist/*.jar /opt/solr/server/solr-webapp/webapp/WEB-INF/lib/`. Then add the new request handler has to be registered in the `solrconfig.xml` file:
 
      <requestHandler name="/lireq" class="net.semanticmetadata.lire.solr.LireRequestHandler">
         <lst name="defaults">
@@ -114,7 +118,7 @@ First run the dist task by `gradle build` command in liresolr folder (gradle sho
 
 Use of the request handler is detailed above.
 
-You'll also need the respective fields in the `schema.xml` (in the base configuration in Solr 6.3.0 it is called `managed-schema`) file:
+You'll also need the respective fields in the `managed-schema` (in the base configuration in Solr 6.3.0 it is called `managed-schema`) file:
 
     <!-- file path for ID, should be there already -->
     <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false" />
@@ -185,6 +189,8 @@ file per image. Specifying an outfile will collect the information of all images
 - *-n* ... number of threads should be something your computer can cope with. default is 4.
 - *-f* ... forces overwrite of outfile
 - *-p* ... enables image processing before indexing (despeckle, trim white space)
+- *-a* ... use both BitSampling and MetricSpaces.
+- *-l* ... disables BitSampling and uses MetricSpaces instead.
 - *-m* ... maximum side length of images when indexed. All bigger files are scaled down. default is 512.
 - *-r* ... defines a class implementing net.semanticmetadata.lire.solr.indexing.ImageDataProcessor
        that provides additional fields.

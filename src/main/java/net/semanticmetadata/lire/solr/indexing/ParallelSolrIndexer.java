@@ -76,6 +76,8 @@ import java.util.concurrent.LinkedBlockingQueue;
  * <li> -m &lt;max-side-length&gt; ... gives a maximum side length for extraction. This option is useful if very larger images are indexed.</li>
  * <li> -f ... forces to overwrite the &lt;outfile&gt;. If the &lt;outfile&gt; already exists and -f is not given, then the operation is aborted.</li>
  * <li> -p ... enables image processing before indexing (despeckle, trim white space)</li>
+ * <li> -a ... use both BitSampling and MetricSpaces.</li>
+ * <li> -l ... disables BitSampling and uses MetricSpaces instead.</li>
  * <li> -r ... defines a class implementing net.semanticmetadata.lire.solr.indexing.ImageDataProcessor that provides additional fields.</li>
  * </ul>
  * <p>
@@ -183,13 +185,15 @@ public class ParallelSolrIndexer implements Runnable {
                     String[] ft = args[i + 1].split(",");
                     for (int j = 0; j < ft.length; j++) {
                         String s = ft[j].trim();
-                        if (FeatureRegistry.getClassForCode(s)!=null) {
+                        if (FeatureRegistry.getClassForCode(s) != null) {
                             e.addFeature(FeatureRegistry.getClassForCode(s));
                         }
                     }
                 }
             } else if (arg.startsWith("-p")) {
                 e.setPreprocessing(true);
+            } else if (arg.startsWith("-a")) {
+                e.setUseBothHashingAlgortihms(true);
             } else if (arg.startsWith("-l")) {
                 e.setUseMetricSpaces(true);
             } else if (arg.startsWith("-h")) {
@@ -218,7 +222,7 @@ public class ParallelSolrIndexer implements Runnable {
     private static void printHelp() {
         System.out.println("This help text is shown if you start the ParallelSolrIndexer with the '-h' option.\n" +
                 "\n" +
-                "$> ParallelSolrIndexer -i <infile> [-o <outfile>] [-n <threads>] [-f] [-p] [-l] [-m <max_side_length>] [-r <full class name>] \\\\ \n" +
+                "$> ParallelSolrIndexer -i <infile> [-o <outfile>] [-n <threads>] [-f] [-p] [-l] [-a] [-m <max_side_length>] [-r <full class name>] \\\\ \n" +
                 "         [-y <list of feature classes>]\n" +
                 "\n" +
                 "Note: if you don't specify an outfile just \".xml\" is appended to the input image for output. So there will be one XML\n" +
@@ -227,6 +231,7 @@ public class ParallelSolrIndexer implements Runnable {
                 "-n ... number of threads should be something your computer can cope with. default is 4.\n" +
                 "-f ... forces overwrite of outfile\n" +
                 "-p ... enables image processing before indexing (despeckle, trim white space)\n" +
+                "-a ... use both BitSampling and MetricSpaces.\n" +
                 "-l ... disables BitSampling and uses MetricSpaces instead.\n" +
                 "-m ... maximum side length of images when indexed. All bigger files are scaled down. default is 512.\n" +
                 "-r ... defines a class implementing net.semanticmetadata.lire.solr.indexing.ImageDataProcessor\n" +
@@ -384,6 +389,11 @@ public class ParallelSolrIndexer implements Runnable {
 
     public void setForce(boolean force) {
         this.force = force;
+    }
+
+    public void setUseBothHashingAlgortihms(boolean useBothHashingAlgortihms) {
+        this.useMetricSpaces = useBothHashingAlgortihms;
+        this.useBitSampling = useBothHashingAlgortihms;
     }
 
     class Monitoring implements Runnable {
