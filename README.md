@@ -94,13 +94,13 @@ Parameters:
 
 Extracting histograms
 ---------------------
-Extracts the histogram and the hashes of an image for use with the Lire sorting function.
+Extracts the histogram and the hashes of an image for use with the Lire sorting function. It will give you hashes and a truncated query for BitSampling (`bs-list` and `bs-query`) and MetricSpaces (`ms-list` and `ms-query`), but the latter only if it's available. the return values for `bs-list` and `ms-list` are ordered by ascending document frequency (BitSampling) and distance from the image to the respective reference point. 
 
 Parameters:
 
 -   **extract** .. the URL of the image. Note that the image has to be accessible by the web server Java has to be able to read it.
 -   **field** .. gives the feature field to search for (optional, default=cl_ha, values see above)
--   **ms** .. defines if you want to use MetricSpaces. Setting it to false gives you BitSampling hashes (default=true, default=cl_ha, values see above)
+
 
 Function querioes with lirefunc
 -------------------------------

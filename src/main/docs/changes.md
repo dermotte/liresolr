@@ -1,6 +1,11 @@
 # LireSolr Change Log
 
 **2016-12-28**
+* Extraction of hashes extended to extract everything possible.
+* Fixed bugs in boosted query generation and HashTermStatistics.
+* Updated documentation
+
+**2016-12-28**
 * Added gradle wrapper to the repo.
 * Removed debug information and switched to ColorLayout as default feature in LireSourceValue
 * 6.3.0b2 release for Docker image.

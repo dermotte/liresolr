@@ -46,7 +46,6 @@ import net.semanticmetadata.lire.indexers.hashing.MetricSpaces;
 import net.semanticmetadata.lire.utils.ImageUtils;
 import net.semanticmetadata.lire.utils.StatsUtils;
 import org.apache.commons.codec.binary.Base64;
-import org.apache.htrace.fasterxml.jackson.databind.util.ArrayIterator;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.*;
@@ -59,7 +58,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.SolrIndexSearcher;
 
@@ -334,11 +332,15 @@ public class LireRequestHandler extends RequestHandlerBase {
             }
             feat.extract(img);
             rsp.add("histogram", Base64.encodeBase64String(feat.getByteArrayRepresentation()));
-            if (!useMetricSpaces) { // only if the field is available.
+            if (!useMetricSpaces || true) { // only if the field is available was the original way
                 HashTermStatistics.addToStatistics(req.getSearcher(), paramField);
                 int[] hashes = BitSampling.generateHashes(feat.getFeatureVector());
-                List<String> hashStrings = orderHashes(hashes, paramField);
-                rsp.add("hashes", hashStrings);
+                List<String> hashStrings = orderHashes(hashes, paramField, false);
+                rsp.add("bs-list", hashStrings);
+                List<String> hashQuery = orderHashes(hashes, paramField, true);
+                int queryLength = (int) StatsUtils.clamp(DEFAULT_NUMBER_OF_QUERY_TERMS * hashes.length,
+                        3, hashQuery.size());
+                rsp.add("bs-query", String.join(" ", hashQuery.subList(0, queryLength)));
             }
             if (MetricSpaces.supportsFeature(feat)) {
                 rsp.add("ms-list", MetricSpaces.generateHashList(feat));
@@ -578,7 +580,7 @@ public class LireRequestHandler extends RequestHandlerBase {
      */
     private BooleanQuery createQuery(int[] hashes, String paramField, double size) {
         size = Math.max(0.1, Math.min(size, 1d)); // clamp size.
-        List<String> hList = orderHashes(hashes, paramField);
+        List<String> hList = orderHashes(hashes, paramField, true);
         int numHashes = (int) Math.min(hList.size(), Math.floor(hashes.length * size));
         // a minimum of 3 hashes ...
         if (numHashes < 3) numHashes = 3;
@@ -601,9 +603,10 @@ public class LireRequestHandler extends RequestHandlerBase {
      *
      * @param hashes     the int[] of hashes
      * @param paramField the field in the index.
+     * @param removeZeroDocFreqTerms
      * @return
      */
-    private List<String> orderHashes(int[] hashes, String paramField) {
+    private List<String> orderHashes(int[] hashes, String paramField, boolean removeZeroDocFreqTerms) {
         List<String> hList = new ArrayList<>(hashes.length);
         // creates a list of terms.
         for (int i = 0; i < hashes.length; i++) {

@@ -63,9 +63,9 @@ public class FlickrPhoto implements Runnable {
             bw.append("<field name=\"title\">" + url + "</field>");
         bw.append("<field name=\"imgurl\">" + photourl + "</field>");
         bw.append("<field name=\"authorid_s\">" + authorID + "</field>");
-        bw.append("<field name=\"authorname_ws\">" + authorName.replaceAll("&(?!amp;)", "&amp;") + "</field>");
+        bw.append("<field name=\"authorname_ws\">" + authorName.replaceAll("&(?!amp;)", "&amp;").replaceAll("<", "&lt;") + "</field>");
         if (tags.size() > 0)
-            bw.append("<field name=\"tags_ws\">" + listToString(tags).replaceAll("&(?!amp;)", "&amp;") + "</field>");
+            bw.append("<field name=\"tags_ws\">" + String.join(" ", tags).replaceAll("&(?!amp;)", "&amp;").replaceAll("<", "&lt;") + "</field>");
         writeFeature(image, new PHOG(), "ph", bw);
         writeFeature(image, new CEDD(), "ce", bw);
         writeFeature(image, new JCD(), "jc", bw);
@@ -93,16 +93,6 @@ public class FlickrPhoto implements Runnable {
             sb.append(Integer.toHexString(array[i]));
         }
         return sb.toString();
-    }
-
-    private String listToString(List<String> tags) {
-        StringBuilder sb = new StringBuilder();
-        for (Iterator<String> iterator = tags.iterator(); iterator.hasNext(); ) {
-            String next = iterator.next();
-            sb.append(next);
-            sb.append(' ');
-        }
-        return sb.toString().trim();
     }
 
     public String getXml() {
