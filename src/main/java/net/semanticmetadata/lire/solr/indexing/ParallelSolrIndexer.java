@@ -50,7 +50,6 @@ import net.semanticmetadata.lire.indexers.parallel.WorkItem;
 import net.semanticmetadata.lire.solr.FeatureRegistry;
 import net.semanticmetadata.lire.solr.HashingMetricSpacesManager;
 import net.semanticmetadata.lire.utils.ImageUtils;
-import org.apache.commons.codec.binary.Base64;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -552,7 +551,7 @@ public class ParallelSolrIndexer implements Runnable {
                                 String metricSpacesField = FeatureRegistry.codeToMetricSpacesField(featureCode);
 
                                 sb.append("<field name=\"" + histogramField + "\">");
-                                sb.append(Base64.encodeBase64String(feature.getByteArrayRepresentation()));
+                                sb.append(Base64.getEncoder().encodeToString(feature.getByteArrayRepresentation()));
                                 sb.append("</field>");
                                 if (useBitSampling) {
                                     sb.append("<field name=\"" + hashesField + "\">");

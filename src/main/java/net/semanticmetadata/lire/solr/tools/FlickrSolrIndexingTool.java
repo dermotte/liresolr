@@ -1,10 +1,12 @@
 package net.semanticmetadata.lire.solr.tools;
+
 import net.semanticmetadata.lire.indexers.hashing.BitSampling;
 import net.semanticmetadata.lire.utils.CommandLineUtils;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashSet;
@@ -21,7 +23,7 @@ import java.util.concurrent.Executors;
  * @author Mathias Lux, mathias@juggle.at, Dec 2016
  */
 public class FlickrSolrIndexingTool {
-    static String helpMessage = "$> FlickrSolrIndexingTool -o <outfile.xml> [-n <number_of_photos>]";
+    static String helpMessage = "$> FlickrSolrIndexingTool -o <outfile.xml|auto> [-n <number_of_photos>]";
     private static int numThreads = 8;
 
     public static void main(String[] args) throws ParserConfigurationException, SAXException, IOException, InterruptedException {
@@ -58,7 +60,11 @@ public class FlickrSolrIndexingTool {
                 }
             }
         }
-        BufferedWriter bw = new BufferedWriter(new FileWriter(p.getProperty("-o")));
+        BufferedWriter bw;
+        if (p.getProperty("-o").equals("auto"))
+            bw = getNextFile();
+        else
+            bw = new BufferedWriter(new FileWriter(p.getProperty("-o")));
         System.out.println("Downloading and analyzing photos");
         bw.write("<add>\n");
         ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
@@ -79,6 +85,14 @@ public class FlickrSolrIndexingTool {
         System.out.println("\nFinished.");
         bw.write("</add>\n");
         bw.close();
+    }
+
+    private static BufferedWriter getNextFile() throws IOException {
+        String pattern = "flickrdownload-%05d.xml";
+        int num = 0;
+        while (new File(String.format(pattern, num)).exists())
+            num++;
+        return new BufferedWriter(new FileWriter(String.format(pattern, num)));
     }
 
 
