@@ -1,6 +1,10 @@
 # LireSolr Change Log
 
 **2016-12-28**
+* Finished demo application, fixed JSON names with "-"
+* Updated Docker image and turned off caching 
+
+**2016-12-28**
 * Extraction of hashes extended to extract everything possible.
 * Fixed bugs in boosted query generation and HashTermStatistics.
 * Updated documentation

@@ -10,7 +10,7 @@
 
 FROM solr:6.3.0
 
-MAINTAINER  Mathias Lux "mlux@itec.aau.at"
+MAINTAINER  Mathias Lux "mathias@juggle.at"
 
 # copy the sample core and untar it ...
 COPY lire-sample-core.tar.gz /opt/solr/server/solr/

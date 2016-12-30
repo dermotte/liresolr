@@ -319,6 +319,7 @@ public class LireRequestHandler extends RequestHandlerBase {
         String paramField = req.getParams().get("field", "cl_ha");
         if (!paramField.endsWith("_ha")) paramField += "_ha";
         useMetricSpaces = req.getParams().getBool("ms", DEFAULT_USE_METRIC_SPACES);
+        double accuracy = req.getParams().getDouble("accuracy", DEFAULT_NUMBER_OF_QUERY_TERMS);
         GlobalFeature feat;
         // wrapping the whole part in the try
         try {
@@ -336,17 +337,17 @@ public class LireRequestHandler extends RequestHandlerBase {
                 HashTermStatistics.addToStatistics(req.getSearcher(), paramField);
                 int[] hashes = BitSampling.generateHashes(feat.getFeatureVector());
                 List<String> hashStrings = orderHashes(hashes, paramField, false);
-                rsp.add("bs-list", hashStrings);
+                rsp.add("bs_list", hashStrings);
                 List<String> hashQuery = orderHashes(hashes, paramField, true);
-                int queryLength = (int) StatsUtils.clamp(DEFAULT_NUMBER_OF_QUERY_TERMS * hashes.length,
+                int queryLength = (int) StatsUtils.clamp(accuracy * hashes.length,
                         3, hashQuery.size());
-                rsp.add("bs-query", String.join(" ", hashQuery.subList(0, queryLength)));
+                rsp.add("bs_query", String.join(" ", hashQuery.subList(0, queryLength)));
             }
             if (MetricSpaces.supportsFeature(feat)) {
-                rsp.add("ms-list", MetricSpaces.generateHashList(feat));
-                int queryLength = (int) StatsUtils.clamp(DEFAULT_NUMBER_OF_QUERY_TERMS * MetricSpaces.getPostingListLength(feat),
+                rsp.add("ms_list", MetricSpaces.generateHashList(feat));
+                int queryLength = (int) StatsUtils.clamp(accuracy * MetricSpaces.getPostingListLength(feat),
                         3, MetricSpaces.getPostingListLength(feat));
-                rsp.add("ms-query", MetricSpaces.generateBoostedQuery(feat, queryLength));
+                rsp.add("ms_query", MetricSpaces.generateBoostedQuery(feat, queryLength));
             }
         } catch (Exception e) {
             rsp.add("Error", "Error reading image from URL: " + paramUrl + ": " + e.getMessage());
