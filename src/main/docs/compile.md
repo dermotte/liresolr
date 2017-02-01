@@ -1,5 +1,5 @@
 # Compiling LireSolr
-*Version: 6.3.0*
+*Version: 6.4.0*
 
 The whole build system has been changed to gradle. So basically you just need an IDE with [Gradle](https://gradle.org/) support and you are ready to go. I am using [Jetbrains IntelliJ IDEA](https://www.jetbrains.com/idea/), which is great for me, but Eclipse and NetBeans do support Gradle. 
 

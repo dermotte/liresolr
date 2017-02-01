@@ -1,5 +1,9 @@
 # LireSolr Change Log
 
+**2017-02-01**
+* Updated to Solr 6.4.0
+* Updated docker image to Solr 6.4.0
+
 **2016-12-28**
 * Finished demo application, fixed JSON names with "-"
 * Updated Docker image and turned off caching 

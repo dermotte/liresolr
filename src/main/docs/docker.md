@@ -2,7 +2,7 @@
 
 The LireSolr project is available at [Github](https://github.com/dermotte/liresolr). You can find installation instructions, documentation, the Dockerfile and source code there. It's the version the docker image is built from. The image is available on [Docker Hub](https://hub.docker.com/r/dermotte/liresolr/).
 
-This Docker image comes with a pre-installed core on a runnning Solr 6.3.0 server by extending the official Solr image. It allows for indexing images and the use of the *LireRequestHandler*. 100 sample documents are available at [Github](https://raw.githubusercontent.com/dermotte/liresolr/master/src/test/resources/sampledocuments.xml) and you can import them using the web interface of Solr.
+This Docker image comes with a pre-installed core on a runnning Solr 6.4.0 server by extending the official Solr image. It allows for indexing images and the use of the *LireRequestHandler*. 100 sample documents are available at [Github](https://raw.githubusercontent.com/dermotte/liresolr/master/src/test/resources/sampledocuments.xml) and you can import them using the web interface of Solr.
 
 ## Run the image / container
 First of all install the Docker engine following the [installation instructions](https://docs.docker.com/engine/installation/). Then run the image with 

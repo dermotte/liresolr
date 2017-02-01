@@ -17,18 +17,18 @@ repositories {
 
 dependencies {
     // ---< Lucene >---
-    compile group: 'org.apache.lucene', name: 'lucene-core', version: '6.3.0'
-    compile group: 'org.apache.lucene', name: 'lucene-analyzers-common', version: '6.3.0'
-    compile group: 'org.apache.lucene', name: 'lucene-queryparser', version: '6.3.0'
-    compile group: 'org.apache.lucene', name: 'lucene-queries', version: '6.3.0'
+    compile group: 'org.apache.lucene', name: 'lucene-core', version: '6.4.0'
+    compile group: 'org.apache.lucene', name: 'lucene-analyzers-common', version: '6.4.0'
+    compile group: 'org.apache.lucene', name: 'lucene-queryparser', version: '6.4.0'
+    compile group: 'org.apache.lucene', name: 'lucene-queries', version: '6.4.0'
 
     // ---< Solr >---
     // https://mvnrepository.com/artifact/org.apache.solr/solr-core
-    compile group: 'org.apache.solr', name: 'solr-core', version: '6.3.0'
+    compile group: 'org.apache.solr', name: 'solr-core', version: '6.4.0'
     // https://mvnrepository.com/artifact/org.apache.solr/solr-dataimporthandler
-    compile group: 'org.apache.solr', name: 'solr-dataimporthandler', version: '6.3.0'
+    compile group: 'org.apache.solr', name: 'solr-dataimporthandler', version: '6.4.0'
     // https://mvnrepository.com/artifact/org.apache.solr/solr-solrj
-    compile group: 'org.apache.solr', name: 'solr-solrj', version: '6.3.0'
+    compile group: 'org.apache.solr', name: 'solr-solrj', version: '6.4.0'
 
     // ---< Commons >---
     compile group: 'commons-io', name: 'commons-io', version: '2.5'
@@ -82,7 +82,7 @@ jar {
 task distForSolr(type: Copy, dependsOn: jar) {
     delete './dist'
     String path = './dist'
-//    String path = 'D:/Java/Libs/solr-6.3.0/server/solr-webapp/webapp/WEB-INF/lib/'
+//    String path = 'D:/Java/Libs/solr-6.4.0/server/solr-webapp/webapp/WEB-INF/lib/'
     String lsJar = 'liresolr.jar'
     String liJar = 'lire.jar'
     delete path + lsJar

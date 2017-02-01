@@ -1,5 +1,5 @@
 # SOLR Installation
-*Version: 6.3.0*
+*Version: 6.4.0*
 
 ## First Steps: Get Solr running
 Using the plain Solr installation in bin\solr start it with
