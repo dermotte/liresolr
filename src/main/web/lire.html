@@ -46,7 +46,7 @@
                 myUrl = docs[i].imgurl.toString();
                 last.append('<div class="imageDiv text-center">' +
                     '<a href="' + myID + '">' +
-                    '<img class="img-responsive" src="' + myUrl + '"  data-toggle="tooltip" data-placement="top" title="' + docs[i].title.toString() + '"></a>' +
+                    '<img class="img-responsive" src="' + myUrl + '"  data-toggle="tooltip" data-placement="top" title="' + docs[i].title.toString() + ' ' + (docs[i].categories_ws!=null ? docs[i].categories_ws.toString() : '') + '"></a>' +
                     // '<div class="well" style="margin-top: 6px">' +
                     '<a href="javascript:search(\'' + myID + '\', \'select\', 1, \'' + myUrl + '\')" class="btn btn-default btn-xs" style="position: relative; top: -3em; opacity: 0.5;"><i class="fa fa-search fa-2x"></i></a> ' +
                     // '</div>' +
@@ -89,7 +89,7 @@
                 } else if (type == 2) {
                     reqUrl += "lireq?ms=false&fl=*&field=" + feature + "&url=" + query;
                 } else if (type == 3) {
-                    reqUrl += "select?wt=json&q=" + query;
+                    reqUrl += "select?wt=json&df=categories_ws&q=" + query;
                 }
                 reqUrl += "&rows=" + $("#numResults").val(); // number of results
                 if (type != 3) {
