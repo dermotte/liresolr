@@ -1,5 +1,9 @@
 # LireSolr Change Log
 
+**2017-02-03**
+* Added Keras based category prediction in Python
+* Updated the lire.html demo application 
+
 **2017-02-01**
 * Updated to Solr 6.4.0
 * Updated docker image to Solr 6.4.0

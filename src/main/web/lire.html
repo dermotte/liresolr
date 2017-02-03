@@ -46,7 +46,7 @@
                 myUrl = docs[i].imgurl.toString();
                 last.append('<div class="imageDiv text-center">' +
                     '<a href="' + myID + '">' +
-                    '<img class="img-responsive" src="' + myUrl + '"  data-toggle="tooltip" data-placement="top" title="' + docs[i].title.toString() + ' ' + (docs[i].categories_ws!=null ? docs[i].categories_ws.toString() : '') + '"></a>' +
+                    '<img class="img-responsive" src="' + myUrl + '"  data-toggle="tooltip" data-placement="top" title="' + docs[i].title.toString() + ' ' + (docs[i].categories_ws != null ? docs[i].categories_ws.toString() : '') + '"></a>' +
                     // '<div class="well" style="margin-top: 6px">' +
                     '<a href="javascript:search(\'' + myID + '\', \'select\', 1, \'' + myUrl + '\')" class="btn btn-default btn-xs" style="position: relative; top: -3em; opacity: 0.5;"><i class="fa fa-search fa-2x"></i></a> ' +
                     // '</div>' +
@@ -83,7 +83,7 @@
             var reqUrl = serverUrlPrefix;
             var searchType = $("#searchTypeSelect").val();
 
-            if (searchType == "lireq") { // if we go for the LireRequestHandler
+            if (searchType == "lireq" || type==3) { // if we go for the LireRequestHandler
                 if (type == 1) {
                     reqUrl += "lireq?ms=false&fl=*&field=" + feature + "&id=" + query;
                 } else if (type == 2) {
@@ -106,6 +106,18 @@
                         printResults(myResult.docs);
                     else
                         printResults(myResult.response.docs);
+                });
+            } else if (searchType == "mlt") { // if we go more like this ...
+                reqUrl += "select?wt=json&mlt=true&mlt.fl=categories_ws&q=id:\"" + query + "\"";
+                reqUrl += "&mlt.count=" + $("#numResults").val(); // number of results
+                console.log(reqUrl);
+                $.getJSON(reqUrl, null, function (myResult) {
+                    // does not enter the callback function ...
+                    console.log(myResult.moreLikeThis);
+                    for (i in myResult.moreLikeThis) {
+                        console.log(myResult.moreLikeThis[i]);
+                        printResults(myResult.moreLikeThis[i].docs);
+                    }
                 });
             } else if (searchType == "allsort") { // if we go for lirefunc only.
                 reqUrl += "lireq?ms=false&field=" + feature + "&extract=" + additionalUrl + "&accuracy=" + $("#accuracyInput").val();
@@ -130,7 +142,7 @@
                     $("#results").show();
                     $("#perf").show();
                     console.log(myResult);
-                    var newReqUrl = serverUrlPrefix + "select?wt=json&q="+feature+"_ha:("+myResult.bs_query+")*&sort=lirefunc(" + feature + ",%22" + myResult.histogram + "%22)%20asc";
+                    var newReqUrl = serverUrlPrefix + "select?wt=json&q=" + feature + "_ha:(" + myResult.bs_query + ")*&sort=lirefunc(" + feature + ",%22" + myResult.histogram + "%22)%20asc";
                     newReqUrl += "&rows=" + $("#numResults").val();
                     console.log(newReqUrl);
                     $.getJSON(newReqUrl, function (myResult) {
@@ -181,7 +193,10 @@
 <div class="container">
     <div class="row">
         <div class="col-md-8"><h1>LireSolr Demo</h1></div>
-        <div class="col-md-4 text-right" style="margin-top: 1em"><p><small><i>Created by Mathias Lux</i></small></p>
+        <div class="col-md-4 text-right" style="margin-top: 1em">
+            <p>
+                <small><i>Created by Mathias Lux</i></small>
+            </p>
             <p>
                 <a href="http://www.lire-project.org"><i class="fa fa-link fa-2x" aria-hidden="true"></i></a>
                 <a href="https://github.com/dermotte/liresolr"><i class="fa fa-github fa-2x" aria-hidden="true"></i></a>
@@ -213,6 +228,7 @@
                                         <option value="lireq">Lire Request Handler</option>
                                         <option value="allsort">Match all documents and sort</option>
                                         <option value="hashsort">Hash filter query and sort</option>
+                                        <option value="mlt">More like this on categories</option>
                                         <!--option>Boosted query</option-->
                                     </select>
                                 </div>
@@ -283,7 +299,11 @@
 </div>
 <div class="container-fluid" style="background-color: ghostwhite">
     <div class="row">
-        <div class="col-md-12 text-center" id="perf"><small><i>Demo application created by Mathias Lux as part of the open source projects <a href="https://github.com/dermotte/liresolr">LireSolr</a> and <a href="https://github.com/dermotte/lire">Lire</a>.</i></small></div>
+        <div class="col-md-12 text-center" id="perf">
+            <small><i>Demo application created by Mathias Lux as part of the open source projects <a
+                    href="https://github.com/dermotte/liresolr">LireSolr</a> and <a
+                    href="https://github.com/dermotte/lire">Lire</a>.</i></small>
+        </div>
     </div>
 </div>
 </body>
