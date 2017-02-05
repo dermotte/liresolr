@@ -39,8 +39,17 @@ def myPredict(myModel, img_path):
 # loading the model
 model = ResNet50(weights='imagenet')
 
+# checking for file names ...
+fileNumber = 1000
+if (sys.argv[1] == "auto"):
+    while os.path.isfile("flickrphotos-" + str(fileNumber) + ".xml") :
+        fileNumber+=1
+    sys.argv[1] = "flickrphotos-" + str(fileNumber) + ".xml" # set new file name ...
+
 if not (os.path.isfile(sys.argv[1])):
     os.system("java -jar flickrdownloader.jar -n 100 -o " + sys.argv[1] + " -s")
+
+
 
 tree = ET.parse(sys.argv[1])
 root = tree.getroot()
