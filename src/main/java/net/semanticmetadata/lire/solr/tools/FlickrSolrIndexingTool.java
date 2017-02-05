@@ -23,8 +23,12 @@ import java.util.concurrent.Executors;
  * @author Mathias Lux, mathias@juggle.at, Dec 2016
  */
 public class FlickrSolrIndexingTool {
-    static String helpMessage = "$> FlickrSolrIndexingTool -o <outfile.xml|auto> [-n <number_of_photos>]";
+    static String helpMessage = "$> FlickrSolrIndexingTool -o <outfile.xml|auto> [-n <number_of_photos>] [-s]\n\n" +
+            "Options\n" +
+            "=======\n" +
+            "-s \t store the images localy as temp files.";
     private static int numThreads = 8;
+    protected static boolean saveDownloadedImages = false;
 
     public static void main(String[] args) throws ParserConfigurationException, SAXException, IOException, InterruptedException {
         BitSampling.readHashFunctions();
@@ -37,6 +41,9 @@ public class FlickrSolrIndexingTool {
             } catch (NumberFormatException e) {
                 e.printStackTrace();
             }
+        }
+        if (p.get("-s") != null) {
+            FlickrSolrIndexingTool.saveDownloadedImages = true;
         }
 
         LinkedList<FlickrPhoto> images = new LinkedList<>();

@@ -6,6 +6,7 @@ import net.semanticmetadata.lire.indexers.hashing.BitSampling;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Base64;
@@ -56,6 +57,10 @@ public class FlickrPhoto implements Runnable {
         StringBuilder bw = new StringBuilder(1024);
         bw.append("<doc>");
         BufferedImage image = ImageIO.read(new URL(photourl));
+        if (FlickrSolrIndexingTool.saveDownloadedImages) {
+            String filepath = saveFile(image);
+            bw.append("<field name=\"localimagefile\">" + filepath + "</field>");
+        }
         bw.append("<field name=\"id\">" + url + "</field>");
         if (title.length() > 0)
             bw.append("<field name=\"title\">" + title.replaceAll("&(?!amp;)", "&amp;").replaceAll("<", "&lt;") + "</field>");
@@ -74,6 +79,12 @@ public class FlickrPhoto implements Runnable {
         writeFeature(image, new ScalableColor(), "sc", bw);
         bw.append("</doc>\n");
         xml = bw.toString();
+    }
+
+    private String saveFile(BufferedImage image) throws IOException {
+        File imageFile = File.createTempFile("flickrdownloader", ".jpg");
+        ImageIO.write(image, "JPG", imageFile);
+        return imageFile.getAbsolutePath();
     }
 
     private void writeFeature(BufferedImage img, GlobalFeature globalFeature, String fieldName, StringBuilder bufferedWriter) throws IOException {

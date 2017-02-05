@@ -43,19 +43,30 @@ model = ResNet50(weights='imagenet')
 tree = ET.parse(sys.argv[1])
 root = tree.getroot()
 for doc in root:
+    imagefile = "";
+    imageurl = "";
     for field in doc:
+        if (field.attrib['name']=='localimagefile'):
+            imagefile = field.text;
+            imagefileField = field;
         if (field.attrib['name']=='imgurl'):
-            try:
-                downloaded = urllib.urlretrieve(field.text);
-                e = ET.Element('field', {'name':'categories_ws'})
-                # e.text = "cat cat dog"
-                e.text = myPredict(model, downloaded[0])
-                doc.append(e)
-                print(downloaded[0] + ': ' + e.text)
-                os.remove(downloaded[0])
-            except:
-                print('error with ' + field.text)
-                pass
+            imageurl = field.text;
+
+    try:
+        if (imagefile == ""):
+            downloaded = urllib.urlretrieve(field.text);
+            imagefile = downloaded[0];
+        else:
+            doc.remove(imagefileField)
+        e = ET.Element('field', {'name':'categories_ws'})
+        # e.text = "cat cat dog"
+        e.text = myPredict(model, imagefile)
+        doc.append(e)
+        print(imagefile + ': ' + e.text)
+        os.remove(imagefile)
+    except:
+        print('error with ' + field.text)
+        pass
 tree.write(os.path.splitext(sys.argv[1])[0] + "_cat.xml")
 
 # reading images from a file

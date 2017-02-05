@@ -1,5 +1,8 @@
 # LireSolr Change Log
 
+**2017-02-05**
+* Implemented image caching for FlickrDownloader tool and the respective use of the cache in the Python file for image classification.
+
 **2017-02-03**
 * Added Keras based category prediction in Python
 * Updated the lire.html demo application 
