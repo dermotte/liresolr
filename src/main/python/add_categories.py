@@ -6,7 +6,7 @@ import sys
 import math
 import urllib
 import xml.etree.ElementTree as ET
-import os
+import os.path
 
 # install with pip: tensorflow, keras, h5py
 
@@ -39,6 +39,8 @@ def myPredict(myModel, img_path):
 # loading the model
 model = ResNet50(weights='imagenet')
 
+if not (os.path.isfile(sys.argv[1])):
+    os.system("java -jar flickrdownloader.jar -n 100 -o " + sys.argv[1] + " -s")
 
 tree = ET.parse(sys.argv[1])
 root = tree.getroot()
