@@ -16,9 +16,15 @@ import os.path
 # the probability of detection gives the tem frequency [0.9,1) -> ten times the term.
 # Mathias Lux, 2017-02-02
 
-if len(sys.argv) < 2 :
+# if you put flickrdownloader.jar in the same directory and the XML file is not found,
+# the jar will be called. If you run it with the "auto" argument and flickrdownloader.jar
+# in the same directory it will download 100 images and assign categories as well as name
+# the resulting files in ascending numbers.
+
+if len(sys.argv) < 2:
     print('too few arguments, give a list of images in a file as argument')
     sys.exit()
+
 
 def myPredict(myModel, img_path):
     img = image.load_img(img_path, target_size=(224, 224))
@@ -32,9 +38,10 @@ def myPredict(myModel, img_path):
     predictions = decode_predictions(preds, top=5)[0]
     tmpString = '';
     for p in predictions:
-        for i in range(0, int(math.ceil(p[2]*10))):
-            tmpString += p[1] + ' ' # putting together the predictions for Solr.
+        for i in range(0, int(math.ceil(p[2] * 10))):
+            tmpString += p[1] + ' '  # putting together the predictions for Solr.
     return tmpString
+
 
 # loading the model
 model = ResNet50(weights='imagenet')
@@ -42,14 +49,12 @@ model = ResNet50(weights='imagenet')
 # checking for file names ...
 fileNumber = 1000
 if (sys.argv[1] == "auto"):
-    while os.path.isfile("flickrphotos-" + str(fileNumber) + ".xml") :
-        fileNumber+=1
-    sys.argv[1] = "flickrphotos-" + str(fileNumber) + ".xml" # set new file name ...
+    while os.path.isfile("flickrphotos-" + str(fileNumber) + ".xml"):
+        fileNumber += 1
+    sys.argv[1] = "flickrphotos-" + str(fileNumber) + ".xml"  # set new file name ...
 
 if not (os.path.isfile(sys.argv[1])):
     os.system("java -jar flickrdownloader.jar -n 100 -o " + sys.argv[1] + " -s")
-
-
 
 tree = ET.parse(sys.argv[1])
 root = tree.getroot()
@@ -57,10 +62,10 @@ for doc in root:
     imagefile = "";
     imageurl = "";
     for field in doc:
-        if (field.attrib['name']=='localimagefile'):
+        if (field.attrib['name'] == 'localimagefile'):
             imagefile = field.text;
             imagefileField = field;
-        if (field.attrib['name']=='imgurl'):
+        if (field.attrib['name'] == 'imgurl'):
             imageurl = field.text;
 
     try:
@@ -69,7 +74,7 @@ for doc in root:
             imagefile = downloaded[0];
         else:
             doc.remove(imagefileField)
-        e = ET.Element('field', {'name':'categories_ws'})
+        e = ET.Element('field', {'name': 'categories_ws'})
         # e.text = "cat cat dog"
         e.text = myPredict(model, imagefile)
         doc.append(e)
