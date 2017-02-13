@@ -130,3 +130,11 @@ task createCommandlineDownloader(type: Jar, dependsOn: build) {
 
 }
 
+task runParallelIndexer(type: JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    main = 'net.semanticmetadata.lire.solr.indexing.ParallelSolrIndexer'
+
+    // arguments to pass to the application
+    args('-i /temp/images.lst -f -o /temp/images-out.xml -n 8'.split(' '))
+}
+
