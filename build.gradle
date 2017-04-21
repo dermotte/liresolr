@@ -27,8 +27,8 @@ dependencies {
     compile group: 'org.apache.solr', name: 'solr-core', version: '6.4.0'
     // https://mvnrepository.com/artifact/org.apache.solr/solr-dataimporthandler
     compile group: 'org.apache.solr', name: 'solr-dataimporthandler', version: '6.4.0'
-    // https://mvnrepository.com/artifact/org.apache.solr/solr-solrj
     compile group: 'org.apache.solr', name: 'solr-solrj', version: '6.4.0'
+    // https://mvnrepository.com/artifact/org.apache.solr/solr-solrj
 
     // ---< Commons >---
     compile group: 'commons-io', name: 'commons-io', version: '2.5'
@@ -54,10 +54,9 @@ dependencies {
 }
 
 
-
 jar {
     Properties props = new Properties()
-    File propsFile = new File('gradle.properties')
+    File propsFile = new File("$project.rootDir/gradle.properties")
     props.load(propsFile.newDataInputStream())
     Integer nextbuildnum = (((props.getProperty('buildNumber')) as BigDecimal) + 1)
     props.setProperty('buildNumber', nextbuildnum.toString())
@@ -75,6 +74,7 @@ jar {
                 'Implementation-Version': props.getProperty('versionString') + ' build' + nextbuildnum.toString() + ' date' + formattedDate.toString()
     }
 }
+
 
 /**
  * Deploys the results from the jar task to Solr.
