@@ -49,6 +49,7 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Base64;
@@ -61,10 +62,9 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import javax.imageio.ImageIO;
 
-import org.apache.commons.math3.stat.descriptive.moment.GeometricMean;
+import org.apache.commons.io.FileUtils;
 
 import net.semanticmetadata.lire.imageanalysis.features.GlobalFeature;
-import net.semanticmetadata.lire.imageanalysis.features.LireFeature;
 import net.semanticmetadata.lire.imageanalysis.features.global.ColorLayout;
 import net.semanticmetadata.lire.imageanalysis.features.global.EdgeHistogram;
 import net.semanticmetadata.lire.imageanalysis.features.global.JCD;
@@ -72,7 +72,6 @@ import net.semanticmetadata.lire.imageanalysis.features.global.PHOG;
 import net.semanticmetadata.lire.indexers.hashing.BitSampling;
 import net.semanticmetadata.lire.indexers.hashing.MetricSpaces;
 import net.semanticmetadata.lire.indexers.parallel.SolrWorkItem;
-import net.semanticmetadata.lire.indexers.parallel.WorkItem;
 import net.semanticmetadata.lire.solr.FeatureRegistry;
 import net.semanticmetadata.lire.solr.HashingMetricSpacesManager;
 import net.semanticmetadata.lire.utils.ImageUtils;
@@ -131,11 +130,15 @@ public class ParallelSolrIndexer implements Runnable {
 	private static int numberOfThreads = 8;
 
 	private boolean useMetricSpaces = false, useBitSampling = true;
+	private boolean logUnprocessableItems = false;
 
 	LinkedBlockingQueue<SolrWorkItem> images = new LinkedBlockingQueue<SolrWorkItem>(maxCacheSize);
 	boolean ended = false;
 	int overallCount = 0;
-	OutputStream dos = null;
+	//OutputStream dos = null;
+	OutputStreamWriter dataStreamWriter;
+	private static final String UTF_8 = "utf-8";
+	
 	@SuppressWarnings("rawtypes")
 	Set<Class> listOfFeatures;
 
@@ -144,6 +147,7 @@ public class ParallelSolrIndexer implements Runnable {
 	private int monitoringInterval = 10;
 	private int maxSideLength = 512;
 	private boolean isPreprocessing = true;
+	@SuppressWarnings("rawtypes")
 	private Class imageDataProcessor = null;
 
 	@SuppressWarnings("rawtypes")
@@ -236,6 +240,8 @@ public class ParallelSolrIndexer implements Runnable {
 				e.setUseBothHashingAlgortihms(true);
 			} else if (arg.startsWith("-l")) {
 				e.setUseMetricSpaces(true);
+			} else if (arg.startsWith("-u")) {
+				e.setLogUnprocessableItems(true);
 			} else if (arg.startsWith("-h")) {
 				// help
 				printHelp();
@@ -276,6 +282,7 @@ public class ParallelSolrIndexer implements Runnable {
 				+ "-r ... defines a class implementing net.semanticmetadata.lire.solr.indexing.ImageDataProcessor\n"
 				+ "       that provides additional fields.\n"
 				+ "-y ... defines which feature classes are to be extracted. default is \"-y ph,cl,eh,jc\". \"-y ce,ac\" would \n"
+				+ "-u ... enables logging of unprocessable items into own files. (currently /tmp/solrlire/badImageFiles.txt and /tmp/solrlire/bad_files.txt ) \n"
 				+ "       add to the other four features. ");
 	}
 
@@ -370,8 +377,10 @@ public class ParallelSolrIndexer implements Runnable {
 		try {
 			if (!individualFiles) {
 				// create a BufferedOutputStream with a large buffer
-				dos = new BufferedOutputStream(new FileOutputStream(outFile), 1024 * 1024 * 8);
-				dos.write("<add>\n".getBytes());
+				FileOutputStream fileOutputStream = new FileOutputStream(outFile);
+				OutputStream dataOutputStream = new BufferedOutputStream(fileOutputStream, 1024 * 1024 * 8);
+				dataStreamWriter = new OutputStreamWriter(dataOutputStream, UTF_8);
+				dataStreamWriter.write("<add>\n");
 			}
 			Thread p = new Thread(new Producer(), "Producer");
 			p.start();
@@ -391,8 +400,8 @@ public class ParallelSolrIndexer implements Runnable {
 			System.out.println("Analyzed " + overallCount + " images in " + l1 / 1000 + " seconds, ~"
 					+ (overallCount > 0 ? (l1 / overallCount) : "inf.") + " ms each.");
 			if (!individualFiles) {
-				dos.write("</add>\n".getBytes());
-				dos.close();
+				dataStreamWriter.write("</add>\n");
+				dataStreamWriter.close();
 			}
 			// writer.commit();
 			// writer.close();
@@ -444,6 +453,14 @@ public class ParallelSolrIndexer implements Runnable {
 		this.useBitSampling = useBothHashingAlgortihms;
 	}
 
+	void writeToFile(String row, File badImages) {
+		try{
+			FileUtils.write(badImages, row + "\n", UTF_8, true);
+		}catch(Exception e1){
+			System.out.println("Cannot log bad images into file: " + badImages.getAbsolutePath() + ": " + e1);
+		}
+	}
+	
 	class Monitoring implements Runnable {
 		public void run() {
 			long ms = System.currentTimeMillis();
@@ -471,12 +488,15 @@ public class ParallelSolrIndexer implements Runnable {
 		public void run() {
 			BufferedReader br = null;
             try {
-                br = new BufferedReader(new FileReader(fileList));
+                FileReader fileReader = new FileReader(fileList);
+                System.out.println("Input File encoding:" + fileReader.getEncoding());
+				br = new BufferedReader(fileReader);
                 String line = null;
                 File imageFile = null;
                 SolrWorkItem workItem = null;
                 ImageDataProcessor idp = null;
                 FileInputStream fis = null;
+                File badImages = new File("/tmp/solrlire/bad_files.txt");
                 
                 while ((line = br.readLine()) != null) {
                 	idp = getImageDataProcessorInstance(line);
@@ -501,6 +521,9 @@ public class ParallelSolrIndexer implements Runnable {
                         System.err.println("Could not read image " + idp.getFilePath() + ": "
                         		+ e.getMessage());
                         e.printStackTrace();
+                        String row = idp.getImageData();
+                        if(isLogUnprocessableItems())
+                        	writeToFile(row, badImages);
                     } finally{
                     	if(fis !=null){
                     		try{
@@ -534,7 +557,7 @@ public class ParallelSolrIndexer implements Runnable {
 					}
 			}
             ended = true;
-        }
+        }	
 	}
 
 	class Consumer implements Runnable {
@@ -543,6 +566,7 @@ public class ParallelSolrIndexer implements Runnable {
 		int count = 0;
 		boolean locallyEnded = false;
 		StringBuilder sb = new StringBuilder(1024);
+		File badImages = new File("/tmp/solrlire/badImageFiles.txt");
 
 		Consumer() {
 			addFeatures(features);
@@ -656,17 +680,18 @@ public class ParallelSolrIndexer implements Runnable {
 						// finally write everything to the stream - in case no
 						// exception was thrown..
 						if (!individualFiles) {
-							synchronized (dos) {
-								dos.write(sb.toString().getBytes());
+							synchronized (dataStreamWriter) {
+								dataStreamWriter.write(sb.toString());
 								// dos.flush(); // flushing takes too long ...
 								// better not.
 							}
 						} else {
 							OutputStream mos = new BufferedOutputStream(
 									new FileOutputStream(tmp.getFileName() + "_solr.xml"));
-							mos.write(sb.toString().getBytes());
-							mos.flush();
-							mos.close();
+							OutputStreamWriter writer = new OutputStreamWriter(mos, UTF_8);
+							writer.write(sb.toString());
+							writer.flush();
+							writer.close();
 						}
 					}
 					// if (!individualFiles) {
@@ -675,8 +700,10 @@ public class ParallelSolrIndexer implements Runnable {
 					// }
 					// }
 				} catch (Exception e) {
-					System.err.println("Error processing file " + tmp.getFileName());
-					e.printStackTrace();
+						System.err.println("Error processing file " + tmp.getFileName());
+						e.printStackTrace();
+						if(isLogUnprocessableItems())
+							writeToFile(tmp.getImageDataProcessor().getImageData(), badImages);
 				}
 			}
 		}
@@ -696,4 +723,11 @@ public class ParallelSolrIndexer implements Runnable {
 		return null;
 	}
 
+	public boolean isLogUnprocessableItems() {
+		return logUnprocessableItems;
+	}
+
+	public void setLogUnprocessableItems(boolean logUnprocessableItems) {
+		this.logUnprocessableItems = logUnprocessableItems;
+	}
 }

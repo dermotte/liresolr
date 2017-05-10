@@ -1,5 +1,6 @@
 package net.semanticmetadata.lire.solr.indexing;
 
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
 
 public class CsvImageDataProcessor extends AbstractImageDataProcessor {
@@ -10,7 +11,7 @@ public class CsvImageDataProcessor extends AbstractImageDataProcessor {
 	//additional fields: e.g. web url for image
 	public static int POS_ADDITIONAL_FIELDS = 3;
 	public static final String CSV_SEPARATOR = ";";
-	public static String POS_ADDITIONAL_FIELD_IMAGE_URL = "image_url";
+	public static String POS_ADDITIONAL_FIELD_IMAGE_URL = "imgurl";
 	
 	
 	String[] imageDataValues;
@@ -63,7 +64,7 @@ public class CsvImageDataProcessor extends AbstractImageDataProcessor {
 		if(getImageDataValues() == null || getImageDataValues().length <= POS_IMAGE_TITLE)
 			return null;
 		
-		return getImageDataValues()[POS_IMAGE_TITLE];	
+		return StringEscapeUtils.escapeXml(getImageDataValues()[POS_IMAGE_TITLE]);	
 	}
 
 	@Override
@@ -72,7 +73,7 @@ public class CsvImageDataProcessor extends AbstractImageDataProcessor {
 			return null;
 		
 		return "<field name=\""+ POS_ADDITIONAL_FIELD_IMAGE_URL +"\">" 
-			+ getImageDataValues()[POS_ADDITIONAL_FIELDS] + "</field>";
+			+ StringEscapeUtils.escapeXml(getImageDataValues()[POS_ADDITIONAL_FIELDS]) + "</field>";
 	}
 
 	
