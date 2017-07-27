@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>LIRE Item Info</title>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+          integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css"
+          integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
+            integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
+            crossorigin="anonymous"></script>
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
+          crossorigin="anonymous">
+
+    <!--   script type="text/javascript" src="gridify.js"></script -->
+
+    <script language="JavaScript">
+    	
+    	serverUrlPrefix = "http://localhost:8983/solr/lire/";
+    	//serverUrlPrefix = "lire/";
+		
+    	function showInfo(id, docs) {
+			//#item
+			if(docs != null && docs.length >= 1){
+				var desc = "id: " + docs[0].id + "<br>";
+				desc += "title: " + docs[0].title + "<br>";
+				desc += "imgUrl: " + docs[0].imgurl + "<br>";
+				desc += 'item page: <a href="http://www.europeana.eu/portal/en/record' + docs[0].id + '.html">'; 
+				desc += 	'http://www.europeana.eu/portal/en/record' + docs[0].id + '.html</a><br>';
+				desc += '<img src="' + docs[0].imgurl + '"/>'; 
+				$("#item").html(desc);
+			}else{
+				$("#item").html("No item found with id: " + id);
+			}
+		}
+
+        $(document).ready(function () {
+            var query = window.location.search;
+            var itemID = query.substring("item=".length + 1); 
+            var url = serverUrlPrefix + 'select?indent=on&wt=json&q=id:"' +itemID +'"';
+            
+            		
+            // add the event handlers ...
+            // get JSON-formatted data from the server
+            $.getJSON(url, function (myResult) {
+                //$("#perf").html("Index search time: " + myResult.responseHeader.QTime + " ms");
+                console.log(myResult);
+                
+                showInfo(itemID, myResult.response.docs);
+            });
+
+        });
+    </script>
+    <style type="text/css">
+        .tab-content {
+            margin-top: 1em;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="row">
+        <div class="col-md-8"><h1>LireSolr Demo</h1></div>
+        <div class="col-md-4 text-right" style="margin-top: 1em">
+            <p>
+                <small><i>Created by Mathias Lux</i></small>
+            </p>
+            <p>
+                <a href="http://www.lire-project.org"><i class="fa fa-link fa-2x" aria-hidden="true"></i></a>
+                <a href="https://github.com/dermotte/liresolr"><i class="fa fa-github fa-2x" aria-hidden="true"></i></a>
+            </p>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12 text-center" id="item">
+        </div>
+    </div>  
+</div>
+
+<div class="container-fluid" style="background-color: ghostwhite">
+    <div class="row">
+        <div class="col-md-12 text-center" id="perf">
+            <small><i>Demo application created by Mathias Lux as part of the open source projects <a
+                    href="https://github.com/dermotte/liresolr">LireSolr</a> and <a
+                    href="https://github.com/dermotte/lire">Lire</a>.</i></small>
+        </div>
+    </div>
+</div>
+</body>
+</html>

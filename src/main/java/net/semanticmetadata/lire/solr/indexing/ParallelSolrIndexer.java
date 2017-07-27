@@ -65,10 +65,13 @@ import javax.imageio.ImageIO;
 import org.apache.commons.io.FileUtils;
 
 import net.semanticmetadata.lire.imageanalysis.features.GlobalFeature;
+import net.semanticmetadata.lire.imageanalysis.features.global.CEDD;
 import net.semanticmetadata.lire.imageanalysis.features.global.ColorLayout;
 import net.semanticmetadata.lire.imageanalysis.features.global.EdgeHistogram;
 import net.semanticmetadata.lire.imageanalysis.features.global.JCD;
+import net.semanticmetadata.lire.imageanalysis.features.global.OpponentHistogram;
 import net.semanticmetadata.lire.imageanalysis.features.global.PHOG;
+import net.semanticmetadata.lire.imageanalysis.features.global.ScalableColor;
 import net.semanticmetadata.lire.indexers.hashing.BitSampling;
 import net.semanticmetadata.lire.indexers.hashing.MetricSpaces;
 import net.semanticmetadata.lire.indexers.parallel.SolrWorkItem;
@@ -155,10 +158,13 @@ public class ParallelSolrIndexer implements Runnable {
 		// default constructor.
 		listOfFeatures = new HashSet<Class>();
 		listOfFeatures.add(PHOG.class);
+		listOfFeatures.add(CEDD.class);
 		listOfFeatures.add(ColorLayout.class);
-		listOfFeatures.add(EdgeHistogram.class);
+		listOfFeatures.add(ScalableColor.class);//		replaced by JCD
 		listOfFeatures.add(JCD.class);
-
+		listOfFeatures.add(EdgeHistogram.class);
+		listOfFeatures.add(OpponentHistogram.class);
+		
 		HashingMetricSpacesManager.init(); // load reference points from disk.
 
 	}

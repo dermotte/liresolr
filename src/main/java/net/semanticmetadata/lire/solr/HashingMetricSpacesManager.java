@@ -25,6 +25,10 @@ public class HashingMetricSpacesManager {
             MetricSpaces.loadReferencePoints(new GZIPInputStream(classloader.getResourceAsStream("metricspaces/logos-ca-ee_OpponentHistogram.msd.gz")));
             MetricSpaces.loadReferencePoints(new GZIPInputStream(classloader.getResourceAsStream("metricspaces/logos-ca-ee_PHOG.msd.gz")));
             MetricSpaces.loadReferencePoints(new GZIPInputStream(classloader.getResourceAsStream("metricspaces/jpg_us_filter_JCD.msd.gz")));
+            
+//          TODO:  Scalable color? replaced by JCD, but could still be usefull
+            
+            
         } catch (Exception e) {
             e.printStackTrace();
         }

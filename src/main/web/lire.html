@@ -28,8 +28,8 @@
 
     <script language="JavaScript">
         serverUrlPrefix = "http://localhost:8983/solr/lire/";
-        // serverUrlPrefix = "lire/";
-
+        //serverUrlPrefix = "lire/";
+        		
         function printResults(docs) {
             var last = $("#imagegrid");
             var options =
@@ -44,11 +44,16 @@
             for (var i = 0; i < docs.length; i++) {
                 myID = docs[i].id.toString();
                 myUrl = docs[i].imgurl.toString();
+                myPage = "http://www.europeana.eu/portal/en/record" + myID + ".html";
+                myItem = "./lire_info.html?item=" + myID;
+                
                 last.append('<div class="imageDiv text-center">' +
-                    '<a href="' + myID + '">' +
+                    '<a href="' + myPage + '" target="_europeana">' +
                     '<img class="img-responsive" src="' + myUrl + '"  data-toggle="tooltip" data-placement="top" title="' + docs[i].title.toString() + ' ' + (docs[i].categories_ws != null ? docs[i].categories_ws.toString() : '') + '"></a>' +
                     // '<div class="well" style="margin-top: 6px">' +
                     '<a href="javascript:search(\'' + myID + '\', \'select\', 1, \'' + myUrl + '\')" class="btn btn-default btn-xs" style="position: relative; top: -3em; opacity: 0.5;"><i class="fa fa-search fa-2x"></i></a> ' +
+                    //info
+                    '<a href="'+myItem+'" target="_lire_info" class="btn btn-default btn-xs" style="position: relative; top: -3em; opacity: 0.5;"><i class="fa fa-info-circle fa-2x"></i></a> ' +
                     // '</div>' +
                     '</div>');
                 // console.log(myUrl);
@@ -63,7 +68,7 @@
             });
             $("#waiting").hide();
         }
-
+        
         /**
          *
          * @param query the docID or URL
@@ -241,6 +246,7 @@
                                         <option value="sc">ScalableColor</option>
                                         <option value="jc">JCD</option>
                                         <option value="oh">OpponentHistogram</option>
+                                        <option value="eh">Edge Histogram</option>
                                         <!--option>Boosted query</option-->
                                     </select>
                                 </div>
