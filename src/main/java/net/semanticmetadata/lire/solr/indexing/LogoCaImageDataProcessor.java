@@ -5,19 +5,15 @@ package net.semanticmetadata.lire.solr.indexing;
  *
  * @author Mathias Lux, mathias@juggle.at, 08.12.2014
  */
-public class LogoCaImageDataProcessor implements ImageDataProcessor {
-    @Override
-    public CharSequence getTitle(String filename) {
-        return filename.substring(filename.lastIndexOf("converted-")+"converted-".length()).replaceAll("\\\\", "/");
+public class LogoCaImageDataProcessor extends AbstractImageDataProcessor {
+    
+	@Override
+    public String getTitle() {
+        return getFilePath().substring(getFilePath().lastIndexOf("converted-")+"converted-".length()).replaceAll("\\\\", "/");
     }
 
     @Override
-    public CharSequence getIdentifier(String filename) {
-        return filename.substring(filename.lastIndexOf("converted-")+"converted-".length()).replaceAll("\\\\", "/");
-    }
-
-    @Override
-    public CharSequence getAdditionalFields(String filename) {
-        return "";
+    public String getIdentifier() {
+        return getFilePath().substring(getFilePath().lastIndexOf("converted-")+"converted-".length()).replaceAll("\\\\", "/");
     }
 }

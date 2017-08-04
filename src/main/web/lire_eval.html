@@ -25,11 +25,21 @@
           crossorigin="anonymous">
 
     <script type="text/javascript" src="gridify.js"></script>
+	<script type="text/javascript" src="url.min.js"></script>
 
     <script language="JavaScript">
-        serverUrlPrefix = "http://localhost:8983/solr/lire/";
+        
+    	var serverUrlPrefix = "http://localhost:8983/solr/lire/";
         //serverUrlPrefix = "lire/";
-        		
+        //read url params
+        var recordId = null;
+         
+        function updatePageLocation(recordId, feature){
+        	var newPage = window.location.origin + window.location.pathname
+        		+"?id="+recordId + "&feature=" + feature;
+        	window.location.replace(newPage);  
+       	} 
+        
         function printResults(docs) {
             var last = $("#imagegrid");
             var options =
@@ -51,7 +61,7 @@
                     '<a href="' + myPage + '" target="_europeana">' +
                     '<img class="img-responsive" src="' + myUrl + '"  data-toggle="tooltip" data-placement="top" title="' + docs[i].title.toString() + ' ' + (docs[i].categories_ws != null ? docs[i].categories_ws.toString() : '') + '"></a>' +
                     // '<div class="well" style="margin-top: 6px">' +
-                    '<a href="javascript:search(\'' + myID + '\', \'select\', 1, \'' + myUrl + '\')" class="btn btn-default btn-xs" style="position: relative; top: -3em; opacity: 0.5;"><i class="fa fa-search fa-2x"></i></a> ' +
+                    '<a href="javascript:searchByItem(\'' + myID + '\')" class="btn btn-default btn-xs" style="position: relative; top: -3em; opacity: 0.5;"><i class="fa fa-search fa-2x"></i></a> ' +
                     //info
                     '<a href="'+myItem+'" target="_lire_info" class="btn btn-default btn-xs" style="position: relative; top: -3em; opacity: 0.5;"><i class="fa fa-info-circle fa-2x"></i></a> ' +
                     // '</div>' +
@@ -67,6 +77,39 @@
                 $('[data-toggle="tooltip"]').tooltip();
             });
             $("#waiting").hide();
+        }
+        
+        function searchRandom(){
+        	//alert('random');
+        	//getRandomItems();
+        	//reset the URL and reload
+       	 	$("#searchUrlQueryFeature").val('SELECT');
+        	var homeUrl = window.location.origin + window.location.pathname;
+        	window.location.replace(homeUrl);
+        }
+        
+        function searchByItem(recordId){
+    		//update feature
+    		feature = $("#searchUrlQueryFeature").val();
+    		if(feature == 'SELECT'){
+    			feature = 'ph';
+    			$("#searchUrlQueryFeature").val(feature);
+    		}
+    		//update method
+    		$("#searchTypeSelect").val('lireq');
+    		//update page location
+    		updatePageLocation(recordId,feature);
+        }
+        
+        function searchWith(feature){
+    		//update feature
+    		$("#searchUrlQueryFeature").val(feature);
+    		//update method
+    		$("#searchTypeSelect").val('lireq');
+    		//update page location
+    		updatePageLocation(recordId,feature);
+    		//perform search
+    		//search(recordId, feature, 1, null);
         }
         
         /**
@@ -107,10 +150,17 @@
                     $("#results").show();
                     $("#perf").show();
                     console.log(myResult);
-                    if (myResult.docs != null)
-                        printResults(myResult.docs);
-                    else
+                    if (myResult.docs != null){
+                        if(type == 1){
+                        	showQueryItem(query, myResult.docs);
+                        }
+                    	printResults(myResult.docs);
+                    } else{
+                    	if(type == 1){
+                        	showQueryItem(query, myResult.response.docs);
+                        }
                         printResults(myResult.response.docs);
+                    }    
                 });
             } else if (searchType == "mlt") { // if we go more like this ...
                 reqUrl += "select?wt=json&mlt=true&mlt.fl=categories_ws&q=id:\"" + query + "\"";
@@ -158,10 +208,30 @@
             }
 
         }
-
+        
+        function showQueryItem(id, docs){
+        	var queryItem = $("#queryItem");
+        	myID = docs[0].id.toString();
+            myUrl = docs[0].imgurl.toString();
+        	 
+        	if(id == myID || id == "first"){
+            	queryItem.html(' <div class="form-group col-md-3">'
+                    //+ '<label class="control-label">Query Image</label>'
+            		//+ '  <div class="imageDiv text-center">' 
+                    + '  <img class="img-responsive" src="' + myUrl + '" data-placement="top" width="50">' 
+                    //+ '  id: ' + id
+                    //+ '</div>' +
+                    + '</div>');
+            	
+            	//reset the queryItem id;
+            	recordId = myID;
+        	}
+        };
+        
+		
         $(document).ready(function () {
-            // add the event handlers ...
-
+			
+			// add the event handlers ...
             $("#searchUrlQuery").keypress(function (event) {
                 if (event.which == 10 || event.which == 13) {
                     console.log("URL query: " + $("#searchUrlQuery").val());
@@ -178,15 +248,28 @@
                 }
             });
 
-
-            // get JSON-formatted data from the server
-            $.getJSON(serverUrlPrefix + "lireq?rows=" + $("#numResults").val(), function (myResult) {
-                $("#perf").html("Index search time: " + myResult.responseHeader.QTime + " ms");
-                console.log(myResult);
-                printResults(myResult.response);
-            });
-
+          	//read url params
+        	recordId = url('?id');
+        	
+            if(recordId == null){
+            	// get RANDOM JSON-formatted data from the server
+                $.getJSON(serverUrlPrefix + "lireq?rows=" + $("#numResults").val(), function (myResult) {
+                    $("#perf").html("Index search time: " + myResult.responseHeader.QTime + " ms");
+                    console.log(myResult);
+                    showQueryItem("first", myResult.response);
+                    printResults(myResult.response);
+                }); 
+            }else{
+            	//lireReq search
+            	var feature = url('?feature');
+            	if(feature == null)
+            		feature = 'ph';
+            	$("#searchUrlQueryFeature").val(feature);
+            	search(recordId, $("#searchUrlQueryFeature").val(), 1, null);	
+            }
+           
         });
+
     </script>
     <style type="text/css">
         .tab-content {
@@ -240,6 +323,7 @@
                                 <div class="form-group col-md-6">
                                     <label for="searchUrlQueryFeature" class="control-label">Search feature</label>
                                     <select id="searchUrlQueryFeature" class="form-control input-sm">
+                                        <option value="SELECT">SELECT</option>
                                         <option value="ph">PHOG</option>
                                         <option value="ce">CEDD</option>
                                         <option value="cl">ColorLayout</option>
@@ -283,16 +367,44 @@
                         </div>
                     </fieldset>
                 </form>
+                <!-- Quick Search Controls  -->
+                <ul class="nav nav-pills" role="tablist">
+                    <li role="presentation"><a href="#searchPH" aria-controls="search" role="tab"
+                                                              data-toggle="tab" onClick="javascript:searchWith('ph')">PHOG</a></li>
+                    <li role="presentation"><a href="#searchCE" aria-controls="search" role="tab"
+                                                              data-toggle="tab" onClick="javascript:searchWith('ce')">CEED</a></li>
+                    <li role="presentation"><a href="#searchCL" aria-controls="search" role="tab"
+                                                              data-toggle="tab" onClick="javascript:searchWith('cl')">Color Layout</a></li>
+                    <li role="presentation"><a href="#searchSC" aria-controls="search" role="tab"
+                                                              data-toggle="tab" onClick="javascript:searchWith('sc')">Scalable Color</a></li>
+                    <li role="presentation"><a href="#searchJC" aria-controls="search" role="tab"
+                                                              data-toggle="tab" onClick="javascript:searchWith('jc')">JCD</a></li>
+                    <li role="presentation"><a href="#searchOH" aria-controls="search" role="tab"
+                                                              data-toggle="tab" onClick="javascript:searchWith('oh')">Opponent Histogram</a></li>
+                    <li role="presentation"><a href="#searchEH" aria-controls="search" role="tab"
+                                                              data-toggle="tab" onClick="javascript:searchWith('eh')">Edge Histogram</a></li>
+                    <li role="presentation"><a href="./lire_eval.html" onClick="javascript:searchRandom()">Random</a></li>
+                </ul>
+                
             </div>
         </div>
     </div>
 </div>
+                                
 <div class="container">
+    <div class="row" id="queryItem">
+<!--      
+     <label for="recordId" class="control-label">Query</label>
+     <input type="text" id="recordId" class="form-control input-sm"
+            min="10" max="500" step="10" value="20" />
+-->            
+	</div>
+    
     <div class="row">
-        <div class="col-xs-12" id="results" hidden>
+        <div class="col-xs-12" id="results" hidden=true>
             <h2>Results</h2>
         </div>
-        <div class="col-xs-12 text-center" id="waiting" hidden>
+        <div class="col-xs-12 text-center" id="waiting" hidden=true>
             <i class="fa fa-spinner fa-pulse fa-3x fa-fw" style="margin-top: 3em"></i>
         </div>
     </div>

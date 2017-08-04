@@ -6,7 +6,11 @@ package net.semanticmetadata.lire.solr.indexing;
  * @author Mathias Lux, mathias@juggle.at, 08.12.2014
  */
 public interface ImageDataProcessor {
-    public CharSequence getTitle(String filename);
-    public CharSequence getIdentifier(String filename);
-    public CharSequence getAdditionalFields(String filename);
+    public String getTitle();
+    public String getIdentifier();
+    public String getAdditionalFields();
+    public String getFilePath();
+    public void setImageData(String imageData);
+    public String getImageData();
+    public void appendSolrFields(StringBuilder sb);
 }

@@ -10,23 +10,23 @@ import java.io.IOException;
  *
  * @author Mathias Lux, mathias@juggle.at, 08.12.2014
  */
-public class MirFlickrImageDataProcessor implements ImageDataProcessor {
+public class MirFlickrImageDataProcessor extends AbstractImageDataProcessor {
     @Override
-    public CharSequence getTitle(String filename) {
+    public String getTitle() {
 //        return filename.replace("G:\\", "").replaceAll("\\\\", "/");
-        return filename.replace("D:\\DataSets\\MirFlickr\\", "").replaceAll("\\\\", "/");
+        return getFilePath().replace("D:\\DataSets\\MirFlickr\\", "").replaceAll("\\\\", "/");
     }
 
     @Override
-    public CharSequence getIdentifier(String filename) {
+    public String getIdentifier() {
 //        return filename.replace("G:\\", "").replaceAll("\\\\", "/");
-        return filename.replace("D:\\DataSets\\MirFlickr\\", "").replaceAll("\\\\", "/");
+        return getFilePath().replace("D:\\DataSets\\MirFlickr\\", "").replaceAll("\\\\", "/");
     }
 
     @Override
-    public CharSequence getAdditionalFields(String filename) {
+    public String getAdditionalFields() {
         StringBuilder sb = new StringBuilder(1024);
-        int fileNumber = Integer.parseInt(filename.substring(filename.lastIndexOf("\\")).replaceAll("[^0-9]", "")) - 1;
+        int fileNumber = Integer.parseInt(getFilePath().substring(getFilePath().lastIndexOf("\\")).replaceAll("[^0-9]", "")) - 1;
         String tagFileName = "D:\\DataSets\\MirFlickr\\tags_raw\\" + (fileNumber/10000) + "\\" + fileNumber + ".txt";
 //        String tagFileName = filename.substring(0, filename.lastIndexOf("\\")) + "\\" + fileNumber + ".txt";
         try {
@@ -39,6 +39,7 @@ public class MirFlickrImageDataProcessor implements ImageDataProcessor {
             e.printStackTrace();
             return "";
         }
-        return sb;
+        return sb.toString();
     }
+ 	
 }
