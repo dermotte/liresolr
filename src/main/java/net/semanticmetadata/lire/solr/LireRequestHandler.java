@@ -58,8 +58,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.search.DocList;
-import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.*;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -189,7 +188,7 @@ public class LireRequestHandler extends RequestHandlerBase {
                     query = new MatchAllDocsQuery();
                     rsp.add("Error", "Feature not supported by MetricSpaces: " + queryFeature.getClass().getSimpleName());
                 }
-                doSearch(req, rsp, searcher, paramField, paramRows, getFilterQuery(req.getParams().get("fq")), query, queryFeature);
+                doSearch(req, rsp, searcher, paramField, paramRows, getFilterQueries(req), query, queryFeature);
             } else {
                 rsp.add("Error", "Did not find an image with the given id " + req.getParams().get("id"));
             }
@@ -200,21 +199,34 @@ public class LireRequestHandler extends RequestHandlerBase {
     }
 
     /**
-     * Parses the fq param and adds it as a filter query or reverts to null if nothing is found
+     * Parses the fq param and adds it as a list of filter queries or reverts to null if nothing is found
      * or an Exception is thrown.
-     * @param fq the String attached to the query.
+     * @param req
      * @return either a query from the QueryParser or null
      */
-    private Query getFilterQuery(String fq) {
-        if (fq == null) return null;
-        QueryParser qp = new QueryParser("title", new WhitespaceAnalyzer());
-        Query query = null;
-        try {
-            qp.parse(fq);
-        } catch (Exception e) {
-            e.printStackTrace();
+    private List<Query> getFilterQueries(SolrQueryRequest req) {
+        List<Query> filters = null;
+
+        String[] fqs = req.getParams().getParams("fq");
+        if (fqs != null && fqs.length != 0) {
+            filters = new ArrayList<>(fqs.length);
+            try {
+                for (String fq : fqs) {
+                    if (fq != null && fq.trim().length() != 0) {
+                        QParser fqp = QParser.getParser(fq, req);
+                        fqp.setIsFilter(true);
+                        filters.add(fqp.getQuery());
+                    }
+                }
+            } catch (SyntaxError e) {
+                e.printStackTrace();
+            }
+
+            if (filters.isEmpty()) {
+                filters = null;
+            }
         }
-        return query;
+        return filters;
     }
 
     /**
@@ -226,17 +238,22 @@ public class LireRequestHandler extends RequestHandlerBase {
      */
     private void handleRandomSearch(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
         SolrIndexSearcher searcher = req.getSearcher();
-        DirectoryReader indexReader = searcher.getIndexReader();
-        double maxDoc = indexReader.maxDoc();
-        int paramRows = req.getParams().getInt("rows", defaultNumberOfResults);
-        if (paramRows > maxDoc) paramRows = (int) Math.floor(maxDoc);
-        if (maxDoc < 1)
+        Query query = new MatchAllDocsQuery();
+        DocList docList = searcher.getDocList(query, getFilterQueries(req), Sort.RELEVANCE, 0, numberOfCandidateResults, 0);
+        int paramRows = Math.min(req.getParams().getInt("rows", defaultNumberOfResults), docList.size());
+        if (docList.size() < 1) {
             rsp.add("Error", "No documents in index");
-        else {
+        } else {
             LinkedList list = new LinkedList();
             while (list.size() < paramRows) {
-                Document d = searcher.doc((int) Math.floor(Math.random() * maxDoc));
-                list.add(d);
+                DocList auxList = docList.subset((int) (Math.random() * docList.size()), 1);
+                Document doc = null;
+                for (DocIterator it = auxList.iterator(); it.hasNext(); ) {
+                    doc = searcher.doc(it.nextDoc());
+                }
+                if (!list.contains(doc)) {
+                    list.add(doc);
+                }
             }
             rsp.addResponse(list);
         }
@@ -300,7 +317,7 @@ public class LireRequestHandler extends RequestHandlerBase {
         }
         // search if the feature has been extracted and query is there.
         if (feat != null && query != null) {
-            doSearch(req, rsp, req.getSearcher(), paramField, paramRows, getFilterQuery(req.getParams().get("fq")), query, feat);
+            doSearch(req, rsp, req.getSearcher(), paramField, paramRows, getFilterQueries(req), query, feat);
         }
     }
 
@@ -416,7 +433,7 @@ public class LireRequestHandler extends RequestHandlerBase {
         }
 
         // get results:
-        doSearch(req, rsp, searcher, paramField, paramRows, getFilterQuery(req.getParams().get("fq")), query, queryFeature);
+        doSearch(req, rsp, searcher, paramField, paramRows, getFilterQueries(req), query, queryFeature);
     }
 
     /**
@@ -427,7 +444,7 @@ public class LireRequestHandler extends RequestHandlerBase {
      * @param searcher      the actual index searcher object to search the index
      * @param hashFieldName the name of the field the hashes can be found
      * @param maximumHits   the maximum number of hits, the smaller the faster
-     * @param filterQuery   can be null
+     * @param filterQueries   can be null
      * @param query         the (Boolean) query for querying the candidates from the IndexSearcher
      * @param queryFeature  the image feature used for re-ranking the results
      * @throws IOException
@@ -435,7 +452,7 @@ public class LireRequestHandler extends RequestHandlerBase {
      * @throws InstantiationException
      */
     private void doSearch(SolrQueryRequest req, SolrQueryResponse rsp, SolrIndexSearcher searcher, String hashFieldName,
-                          int maximumHits, Query filterQuery, Query query, GlobalFeature queryFeature)
+                          int maximumHits, List<Query> filterQueries, Query query, GlobalFeature queryFeature)
             throws IOException, IllegalAccessException, InstantiationException {
         // temp feature instance
         GlobalFeature tmpFeature = queryFeature.getClass().newInstance();
@@ -451,8 +468,8 @@ public class LireRequestHandler extends RequestHandlerBase {
         Iterator<Integer> docIterator;
         int numberOfResults = 0;
         time = System.currentTimeMillis();
-        if (filterQuery != null) {
-            DocList docList = searcher.getDocList(query, filterQuery, Sort.RELEVANCE, 0, numberOfCandidateResults);
+        if (filterQueries != null) {
+            DocList docList = searcher.getDocList(query, filterQueries, Sort.RELEVANCE, 0, numberOfCandidateResults, 0);
             numberOfResults = docList.size();
             docIterator = docList.iterator();
         } else {
