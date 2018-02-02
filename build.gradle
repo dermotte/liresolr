@@ -7,6 +7,8 @@ apply plugin: 'project-report'
 sourceCompatibility = 1.8
 version = project.property('versionString') + '_build' + project.property('buildNumber')
 
+def solrVersion = '7.2.1'
+
 repositories {
     mavenLocal()
     mavenCentral()
@@ -17,17 +19,17 @@ repositories {
 
 dependencies {
     // ---< Lucene >---
-    compile group: 'org.apache.lucene', name: 'lucene-core', version: '6.4.0'
-    compile group: 'org.apache.lucene', name: 'lucene-analyzers-common', version: '6.4.0'
-    compile group: 'org.apache.lucene', name: 'lucene-queryparser', version: '6.4.0'
-    compile group: 'org.apache.lucene', name: 'lucene-queries', version: '6.4.0'
+    compile group: 'org.apache.lucene', name: 'lucene-core', version: solrVersion
+    compile group: 'org.apache.lucene', name: 'lucene-analyzers-common', version: solrVersion
+    compile group: 'org.apache.lucene', name: 'lucene-queryparser', version: solrVersion
+    compile group: 'org.apache.lucene', name: 'lucene-queries', version: solrVersion
 
     // ---< Solr >---
     // https://mvnrepository.com/artifact/org.apache.solr/solr-core
-    compile group: 'org.apache.solr', name: 'solr-core', version: '6.4.0'
+    compile group: 'org.apache.solr', name: 'solr-core', version: solrVersion
     // https://mvnrepository.com/artifact/org.apache.solr/solr-dataimporthandler
-    compile group: 'org.apache.solr', name: 'solr-dataimporthandler', version: '6.4.0'
-    compile group: 'org.apache.solr', name: 'solr-solrj', version: '6.4.0'
+    compile group: 'org.apache.solr', name: 'solr-dataimporthandler', version: solrVersion
+    compile group: 'org.apache.solr', name: 'solr-solrj', version: solrVersion
     // https://mvnrepository.com/artifact/org.apache.solr/solr-solrj
 
     // ---< Commons >---

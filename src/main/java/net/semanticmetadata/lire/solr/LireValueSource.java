@@ -39,20 +39,24 @@
 
 package net.semanticmetadata.lire.solr;
 
-import net.semanticmetadata.lire.imageanalysis.features.GlobalFeature;
-import net.semanticmetadata.lire.imageanalysis.features.global.ColorLayout;
-import net.semanticmetadata.lire.imageanalysis.features.global.EdgeHistogram;
-import org.apache.lucene.index.*;
-import org.apache.lucene.queries.function.FunctionValues;
-import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.queries.function.docvalues.DocTermsIndexDocValues;
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.solr.common.util.Base64;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
+
+import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.DocValuesType;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.queries.function.FunctionValues;
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.docvalues.DocTermsIndexDocValues;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
+
+import net.semanticmetadata.lire.imageanalysis.features.GlobalFeature;
+import net.semanticmetadata.lire.imageanalysis.features.global.ColorLayout;
+import net.semanticmetadata.lire.solr.tools.RandomAccessBinaryDocValues;
 
 /**
  * A query function for sorting results based on the LIRE CBIR functions.
@@ -74,7 +78,9 @@ public class LireValueSource extends ValueSource {
      * @param maxDistance  the distance value returned if there is no distance calculation possible.
      */
     public LireValueSource(String featureField, byte[] hist, double maxDistance) {
-        if (featureField != null) field = featureField;
+        if (featureField != null) {
+            field = featureField;
+        }
         if (!field.endsWith("_hi")) { // TODO: Make that somewhat not so string dependent .. maybe connect with the postfix in FeatureRegistry
             field += "_hi";
         }
@@ -189,28 +195,50 @@ public class LireValueSource extends ValueSource {
     public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
         final FieldInfo fieldInfo = readerContext.reader().getFieldInfos().fieldInfo(field);
         if (fieldInfo != null && fieldInfo.getDocValuesType() == DocValuesType.BINARY) {
-            final BinaryDocValues binaryValues = DocValues.getBinary(readerContext.reader(), field);
-            final Bits docsWithField = DocValues.getDocsWithField(readerContext.reader(), field);
+//            final BinaryDocValues binaryValues = DocValues.getBinary(readerContext.reader(), field);
+//            final Bits docsWithField = DocValues.getDocsWithField(readerContext.reader(), field);
+            final BinaryDocValues binaryValues = new RandomAccessBinaryDocValues(() -> {
+                try {
+                    return DocValues.getBinary(readerContext.reader(), field);
+                } catch (IOException e) {
+                    throw new RuntimeException("BinaryDocValues problem.", e);
+                }
+
+            });
+
+
 
             return new FunctionValues() {
                 @Override
-                public boolean exists(int doc) {
-                    return docsWithField.get(doc);
+                public boolean exists(int doc) throws IOException {
+                    return binaryValues.advance(doc) == doc;
+//                    return docsWithField.get(doc);
                 }
 
                 @Override
-                public boolean bytesVal(int doc, BytesRefBuilder target) {
-                    target.copyBytes(binaryValues.get(doc));
+                public boolean bytesVal(int doc, BytesRefBuilder target)
+                        throws IOException {
+//                    target.copyBytes(binaryValues.get(doc));
+//                    return target.length() > 0;
+                    BytesRef bytesRef;
+                    if (binaryValues.advance(doc) == doc) {
+                        bytesRef = binaryValues.binaryValue();
+                    } else {
+                        bytesRef = new BytesRef(BytesRef.EMPTY_BYTES);
+                    }
+                    target.copyBytes(bytesRef);
                     return target.length() > 0;
+
                 }
 
 
                 @Override
-                public float floatVal(int doc) {
+                public float floatVal(int doc) throws IOException {
                     return (float) doubleVal(doc);
                 }
 
-                public String strVal(int doc) {
+                @Override
+                public String strVal(int doc) throws IOException {
                     final BytesRefBuilder bytes = new BytesRefBuilder();
                     return bytesVal(doc, bytes)
                             ? bytes.get().utf8ToString()
@@ -222,14 +250,15 @@ public class LireValueSource extends ValueSource {
                  * in this case it is the double form the distance function.
                  * @param doc
                  * @return the distance as Double, mapping to {@link FunctionValues#doubleVal(int)}
+                 * @throws IOException
                  */
                 @Override
-                public Object objectVal(int doc) {
+                public Object objectVal(int doc) throws IOException {
                     return doubleVal(doc);
                 }
 
                 @Override
-                public String toString(int doc) {
+                public String toString(int doc) throws IOException {
                     return description() + '=' + strVal(doc);
                 }
 
@@ -237,12 +266,19 @@ public class LireValueSource extends ValueSource {
                 /**
                  * This method has to be implemented to support sorting!
                  */
-                public double doubleVal(int doc) {
-                    if (binaryValues.get(doc).length > 0) {
-                        tmpFeature.setByteArrayRepresentation(binaryValues.get(doc).bytes, binaryValues.get(doc).offset, binaryValues.get(doc).length);
+                public double doubleVal(int doc) throws IOException {
+                    BytesRef bytesRef = getBytesRef(binaryValues, doc);
+                    if (bytesRef.length > 0) {
+                        tmpFeature.setByteArrayRepresentation(
+                                bytesRef.bytes,
+                                bytesRef.offset,
+                                bytesRef.length);
+//                        tmpFeature.setByteArrayRepresentation(binaryValues.get(doc).bytes, binaryValues.get(doc).offset, binaryValues.get(doc).length);
                         return tmpFeature.getDistance(feature);
-                    } else
+                    }
+                    else {
                         return maxDistance; // make sure max distance is returned for those without value
+                    }
                 }
             };
         } else {
@@ -259,11 +295,12 @@ public class LireValueSource extends ValueSource {
                 }
 
                 @Override
-                public String toString(int doc) {
+                public String toString(int doc) throws IOException {
                     return description() + '=' + strVal(doc);
                 }
 
 
+                @Override
                 public double doubleVal(int doc) {
                     return maxDistance;
                 }
@@ -271,13 +308,24 @@ public class LireValueSource extends ValueSource {
         }
     }
 
+    private BytesRef getBytesRef(BinaryDocValues bdv, int docId)
+            throws IOException {
+        if (bdv != null && bdv.advance(docId) == docId) {
+//        if (bdv != null && bdv.docID() < docId && bdv.advance(docId) == docId) {
+//        if (bdv != null && bdv.advanceExact(docId)) {
+            return bdv.binaryValue();
+        }
+        return new BytesRef(BytesRef.EMPTY_BYTES);
+    }
+
     @Override
     public boolean equals(Object o) {
-        if (o instanceof LireValueSource)
+        if (o instanceof LireValueSource) {
             // check if the function has had the same parameters.
             return objectHashBase.equals(((LireValueSource) o).objectHashBase);
-        else
+        } else {
             return false;
+        }
     }
 
     @Override
@@ -289,6 +337,4 @@ public class LireValueSource extends ValueSource {
     public String description() {
         return "distance to a given feature vector";
     }
-
-
 }

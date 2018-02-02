@@ -83,7 +83,10 @@ public class BinaryDocValuesField extends FieldType {
     @Override
     public ByteBuffer toObject(IndexableField f) {
         BytesRef bytes = f.binaryValue();
-        return  ByteBuffer.wrap(bytes.bytes, bytes.offset, bytes.length);
+        if (bytes != null) {
+            return  ByteBuffer.wrap(bytes.bytes, bytes.offset, bytes.length);
+        }
+        return ByteBuffer.allocate(0);
     }
 
     @Override
@@ -93,7 +96,7 @@ public class BinaryDocValuesField extends FieldType {
     }
 
     @Override
-    public IndexableField createField(SchemaField field, Object val, float boost) {
+    public IndexableField createField(SchemaField field, Object val /*, float boost*/) {
         if (val == null) return null;
         if (!field.stored()) {
             return null;
@@ -118,7 +121,7 @@ public class BinaryDocValuesField extends FieldType {
 
         Field f = new org.apache.lucene.document.BinaryDocValuesField(field.getName(), new BytesRef(buf, offset, len));
 //        Field f = new org.apache.lucene.document.StoredField(field.getName(), buf, offset, len);
-        f.setBoost(boost);
+        //f.setBoost(boost);
         return f;
     }
 }
