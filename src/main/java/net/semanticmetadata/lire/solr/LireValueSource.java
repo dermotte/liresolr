@@ -308,6 +308,7 @@ public class LireValueSource extends ValueSource {
         }
     }
 
+	// TODO: Check for a workaround to not introduce variables for runtime performance (or check if this is neccessary first).
     private BytesRef getBytesRef(BinaryDocValues bdv, int docId)
             throws IOException {
         if (bdv != null && bdv.advance(docId) == docId) {
