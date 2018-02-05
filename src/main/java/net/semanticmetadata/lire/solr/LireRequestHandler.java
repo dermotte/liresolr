@@ -39,32 +39,58 @@
 
 package net.semanticmetadata.lire.solr;
 
-import net.semanticmetadata.lire.imageanalysis.features.GlobalFeature;
-import net.semanticmetadata.lire.imageanalysis.features.global.ColorLayout;
-import net.semanticmetadata.lire.indexers.hashing.BitSampling;
-import net.semanticmetadata.lire.indexers.hashing.MetricSpaces;
-import net.semanticmetadata.lire.utils.ImageUtils;
-import net.semanticmetadata.lire.utils.StatsUtils;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.StringTokenizer;
+import java.util.TreeSet;
+
+import javax.imageio.ImageIO;
+
 import org.apache.commons.codec.binary.Base64;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.*;
+import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.MultiDocValues;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.search.*;
+import org.apache.solr.search.DocIterator;
+import org.apache.solr.search.DocList;
+import org.apache.solr.search.QParser;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.SyntaxError;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.net.URL;
-import java.util.*;
+import net.semanticmetadata.lire.imageanalysis.features.GlobalFeature;
+import net.semanticmetadata.lire.imageanalysis.features.global.ColorLayout;
+import net.semanticmetadata.lire.indexers.hashing.BitSampling;
+import net.semanticmetadata.lire.indexers.hashing.MetricSpaces;
+import net.semanticmetadata.lire.solr.tools.RandomAccessBinaryDocValues;
+import net.semanticmetadata.lire.utils.ImageUtils;
+import net.semanticmetadata.lire.utils.StatsUtils;
 
 /**
  * This is the main LIRE RequestHandler for the Solr Plugin. It supports query by example using the indexed id,
@@ -76,7 +102,6 @@ import java.util.*;
 public class LireRequestHandler extends RequestHandlerBase {
     //    private static HashMap<String, Class> fieldToClass = new HashMap<String, Class>(5);
     private long time = 0;
-    private int countRequests = 0;
     private int defaultNumberOfResults = 60;
     /**
      * number of candidate results retrieved from the index. The higher this number, the slower,
@@ -152,8 +177,11 @@ public class LireRequestHandler extends RequestHandlerBase {
 //            TopDocs hits = searcher.search(new TermQuery(new Term("id", req.getParams().get("id"))), 1);
             int queryDocId = searcher.getFirstMatch(new Term("id", req.getParams().get("id")));
             // get the parameters
-            String paramField = req.getParams().get("field", "cl_ha");
-            if (!paramField.endsWith("_ha")) paramField += "_ha";
+            String tmpParamField = req.getParams().get("field", "cl_ha");
+            if (!tmpParamField.endsWith("_ha")) {
+                tmpParamField += "_ha";
+            }
+            final String paramField = tmpParamField;
             numberOfQueryTerms = req.getParams().getDouble("accuracy", DEFAULT_NUMBER_OF_QUERY_TERMS);
             numberOfCandidateResults = req.getParams().getInt("candidates", DEFAULT_NUMBER_OF_CANDIDATES);
             useMetricSpaces = req.getParams().getBool("ms", DEFAULT_USE_METRIC_SPACES);
@@ -164,12 +192,23 @@ public class LireRequestHandler extends RequestHandlerBase {
             rsp.add("QueryFeature", queryFeature.getClass().getName());
             if (queryDocId > -1) {
                 // Using DocValues to get the actual data from the index.
-                BinaryDocValues binaryValues = MultiDocValues.getBinaryValues(searcher.getIndexReader(), FeatureRegistry.getFeatureFieldName(paramField));
+//              BinaryDocValues binaryValues = MultiDocValues.getBinaryValues(searcher.getIndexReader(), FeatureRegistry.getFeatureFieldName(paramField));
+                BinaryDocValues binaryValues = new RandomAccessBinaryDocValues(() -> {
+                    try {
+                        return MultiDocValues.getBinaryValues(searcher.getIndexReader(), FeatureRegistry.getFeatureFieldName(paramField));
+                    } catch (IOException e) {
+                        throw new RuntimeException("BinaryDocValues problem.", e);
+                    }
+
+                });
                 if (binaryValues == null) {
                     rsp.add("Error", "Could not find the DocValues of the query document. Are they in the index? Id: " + req.getParams().get("id"));
                     // System.err.println("Could not find the DocValues of the query document. Are they in the index?");
                 }
-                queryFeature.setByteArrayRepresentation(binaryValues.get(queryDocId).bytes, binaryValues.get(queryDocId).offset, binaryValues.get(queryDocId).length);
+//                queryFeature.setByteArrayRepresentation(binaryValues.get(queryDocId).bytes, binaryValues.get(queryDocId).offset, binaryValues.get(queryDocId).length);
+                BytesRef bvBytesRef = getBytesRef(binaryValues, queryDocId);
+                queryFeature.setByteArrayRepresentation(
+                        bvBytesRef.bytes, bvBytesRef.offset, bvBytesRef.length);
 
                 Query query = null;
                 if (!useMetricSpaces) {
@@ -273,7 +312,9 @@ public class LireRequestHandler extends RequestHandlerBase {
         SolrParams params = req.getParams();
         String paramUrl = params.get("url");
         String paramField = req.getParams().get("field", "cl_ha");
-        if (!paramField.endsWith("_ha")) paramField += "_ha";
+        if (!paramField.endsWith("_ha")) {
+            paramField += "_ha";
+        }
         int paramRows = params.getInt("rows", defaultNumberOfResults);
         numberOfQueryTerms = req.getParams().getDouble("accuracy", DEFAULT_NUMBER_OF_QUERY_TERMS);
         numberOfCandidateResults = req.getParams().getInt("candidates", DEFAULT_NUMBER_OF_CANDIDATES);
@@ -288,9 +329,9 @@ public class LireRequestHandler extends RequestHandlerBase {
             BufferedImage img = ImageIO.read(new URL(paramUrl).openStream());
             img = ImageUtils.trimWhiteSpace(img);
             // getting the right feature per field:
-            if (FeatureRegistry.getClassForHashField(paramField) == null) // if the feature is not registered.
+            if (FeatureRegistry.getClassForHashField(paramField) == null) {
                 feat = new ColorLayout();
-            else {
+            } else {
                 feat = (GlobalFeature) FeatureRegistry.getClassForHashField(paramField).newInstance();
             }
             feat.extract(img);
@@ -334,7 +375,9 @@ public class LireRequestHandler extends RequestHandlerBase {
         SolrParams params = req.getParams();
         String paramUrl = params.get("extract");
         String paramField = req.getParams().get("field", "cl_ha");
-        if (!paramField.endsWith("_ha")) paramField += "_ha";
+        if (!paramField.endsWith("_ha")) {
+            paramField += "_ha";
+        }
         useMetricSpaces = req.getParams().getBool("ms", DEFAULT_USE_METRIC_SPACES);
         double accuracy = req.getParams().getDouble("accuracy", DEFAULT_NUMBER_OF_QUERY_TERMS);
         GlobalFeature feat;
@@ -343,9 +386,9 @@ public class LireRequestHandler extends RequestHandlerBase {
             BufferedImage img = ImageIO.read(new URL(paramUrl).openStream());
             img = ImageUtils.trimWhiteSpace(img);
             // getting the right feature per field:
-            if (FeatureRegistry.getClassForHashField(paramField) == null) // if the feature is not registered.
+            if (FeatureRegistry.getClassForHashField(paramField) == null) {
                 feat = new ColorLayout();
-            else {
+            } else {
                 feat = (GlobalFeature) FeatureRegistry.getClassForHashField(paramField).newInstance();
             }
             feat.extract(img);
@@ -391,18 +434,26 @@ public class LireRequestHandler extends RequestHandlerBase {
 
         byte[] featureVector = Base64.decodeBase64(params.get("feature"));
         String paramField = req.getParams().get("field", "cl_ha");
-        if (!paramField.endsWith("_ha")) paramField += "_ha";
+
+        // _ms is added automatically below and cause issues if kept here
+        paramField = paramField.replace("_ms", "");
+
+        if (!paramField.endsWith("_ha")) {
+            paramField += "_ha";
+        }
         int paramRows = params.getInt("rows", defaultNumberOfResults);
         numberOfQueryTerms = req.getParams().getDouble("accuracy", DEFAULT_NUMBER_OF_QUERY_TERMS);
         numberOfCandidateResults = req.getParams().getInt("candidates", DEFAULT_NUMBER_OF_CANDIDATES);
         useMetricSpaces = req.getParams().getBool("ms", DEFAULT_USE_METRIC_SPACES);
 
         // query feature
-        GlobalFeature queryFeature = (GlobalFeature) FeatureRegistry.getClassForHashField(paramField).newInstance();
+        GlobalFeature queryFeature = (GlobalFeature)
+                FeatureRegistry.getClassForHashField(paramField).newInstance();
         queryFeature.setByteArrayRepresentation(featureVector);
 
-        if (!useMetricSpaces)
+        if (!useMetricSpaces) {
             HashTermStatistics.addToStatistics(req.getSearcher(), paramField); // caching the term statistics.
+        }
 
         QueryParser qp = null;
         String queryString = null;
@@ -425,6 +476,8 @@ public class LireRequestHandler extends RequestHandlerBase {
                 qp = new QueryParser(paramField.replace("_ha", "_ms"), new WhitespaceAnalyzer());
             }
         }
+
+
         Query query = null;
         try {
             query = qp.parse(queryString);
@@ -460,13 +513,20 @@ public class LireRequestHandler extends RequestHandlerBase {
         time = System.currentTimeMillis();
 
         String featureFieldName = FeatureRegistry.getFeatureFieldName(hashFieldName);
-        BinaryDocValues binaryValues = MultiDocValues.getBinaryValues(searcher.getIndexReader(), featureFieldName);
+//        BinaryDocValues binaryValues = MultiDocValues.getBinaryValues(searcher.getIndexReader(), featureFieldName);
+        BinaryDocValues binaryValues = new RandomAccessBinaryDocValues(() -> {
+            try {
+                return MultiDocValues.getBinaryValues(searcher.getIndexReader(), featureFieldName);
+            } catch (IOException e) {
+                throw new RuntimeException("BinaryDocValues problem.", e);
+            }
+        });
 
         time = System.currentTimeMillis() - time;
         rsp.add("DocValuesOpenTime", time + "");
 
         Iterator<Integer> docIterator;
-        int numberOfResults = 0;
+        long numberOfResults = 0;
         time = System.currentTimeMillis();
         if (filterQueries != null) {
             DocList docList = searcher.getDocList(query, filterQueries, Sort.RELEVANCE, 0, numberOfCandidateResults, 0);
@@ -481,21 +541,25 @@ public class LireRequestHandler extends RequestHandlerBase {
         rsp.add("RawDocsCount", numberOfResults + "");
         rsp.add("RawDocsSearchTime", time + "");
         time = System.currentTimeMillis();
-        TreeSet<CachingSimpleResult> resultScoreDocs = getReRankedResults(docIterator, binaryValues, queryFeature, tmpFeature, maximumHits, searcher);
+        TreeSet<CachingSimpleResult> resultScoreDocs = getReRankedResults(
+                docIterator, binaryValues, queryFeature, tmpFeature,
+                maximumHits, searcher);
 
         // Creating response ...
         time = System.currentTimeMillis() - time;
         rsp.add("ReRankSearchTime", time + "");
-        LinkedList list = new LinkedList();
-        for (Iterator<CachingSimpleResult> it = resultScoreDocs.iterator(); it.hasNext(); ) {
-            CachingSimpleResult result = it.next();
+        // replaced with SolrDocumentList for consistency.
+//      LinkedList list = new LinkedList();
+        SolrDocumentList list = new SolrDocumentList();
+        for (CachingSimpleResult result : resultScoreDocs) {
             HashMap m = new HashMap(2);
             m.put("d", result.getDistance());
             // add fields as requested:
             if (req.getParams().get("fl") == null) {
                 m.put("id", result.getDocument().get("id"));
-                if (result.getDocument().get("title") != null)
+                if (result.getDocument().get("title") != null) {
                     m.put("title", result.getDocument().get("title"));
+                }
             } else {
                 String fieldsRequested = req.getParams().get("fl");
                 if (fieldsRequested.contains("score")) {
@@ -514,10 +578,11 @@ public class LireRequestHandler extends RequestHandlerBase {
                     }
                 } else {
                     StringTokenizer st;
-                    if (fieldsRequested.contains(","))
+                    if (fieldsRequested.contains(",")) {
                         st = new StringTokenizer(fieldsRequested, ",");
-                    else
+                    } else {
                         st = new StringTokenizer(fieldsRequested, " ");
+                    }
                     while (st.hasMoreElements()) {
                         String tmpField = st.nextToken();
                         if (result.getDocument().getFields(tmpField).length > 1) {
@@ -530,13 +595,21 @@ public class LireRequestHandler extends RequestHandlerBase {
             }
 //            m.put(field, result.getDocument().get(field));
 //            m.put(field.replace("_ha", "_hi"), result.getDocument().getBinaryValue(field));
-            list.add(m);
+            //list.add(m);
+            list.add(new SolrDocument(m));
         }
-        rsp.add("docs", list);
+
+        // Format results to be similar to regular response
+        rsp.add("response", list);
+        //rsp.add("docs", list);
         // rsp.add("Test-name", "Test-val");
     }
 
-    private TreeSet<CachingSimpleResult> getReRankedResults(Iterator<Integer> docIterator, BinaryDocValues binaryValues, GlobalFeature queryFeature, GlobalFeature tmpFeature, int maximumHits, IndexSearcher searcher) throws IOException {
+    private TreeSet<CachingSimpleResult> getReRankedResults(
+            Iterator<Integer> docIterator, BinaryDocValues binaryValues,
+            GlobalFeature queryFeature, GlobalFeature tmpFeature,
+            int maximumHits, IndexSearcher searcher) throws IOException {
+
         TreeSet<CachingSimpleResult> resultScoreDocs = new TreeSet<>();
         double maxDistance = -1f;
         double tmpScore;
@@ -545,7 +618,9 @@ public class LireRequestHandler extends RequestHandlerBase {
         while (docIterator.hasNext()) {
             // using DocValues to retrieve the field values ...
             int doc = docIterator.next();
-            bytesRef = binaryValues.get(doc);
+
+//            bytesRef = binaryValues.get(doc);
+            bytesRef = getBytesRef(binaryValues, doc);
             tmpFeature.setByteArrayRepresentation(bytesRef.bytes, bytesRef.offset, bytesRef.length);
             // Getting the document from the index.
             // This is the slow step based on the field compression of stored fields.
@@ -574,18 +649,18 @@ public class LireRequestHandler extends RequestHandlerBase {
         return "LIRE Request Handler to add images to an index and search them. Search images by id, by url and by extracted features.";
     }
 
-    @Override
-    public String getSource() {
-        return "http://lire-project.net";
-    }
-
-    @Override
-    public NamedList<Object> getStatistics() {
-        // Change stats here to get an insight in the admin console.
-        NamedList<Object> statistics = super.getStatistics();
-        statistics.add("Number of Requests", countRequests);
-        return statistics;
-    }
+//    @Override
+//    public String getSource() {
+//        return "http://lire-project.net";
+//    }
+//
+//    @Override
+//    public NamedList<Object> getStatistics() {
+//        // Change stats here to get an insight in the admin console.
+//        NamedList<Object> statistics = super.getStatistics();
+//        statistics.add("Number of Requests", countRequests);
+//        return statistics;
+//    }
 
     /**
      * Makes a Boolean query out of a list of hashes by ordering them ascending using their docFreq and
@@ -601,16 +676,18 @@ public class LireRequestHandler extends RequestHandlerBase {
         List<String> hList = orderHashes(hashes, paramField, true);
         int numHashes = (int) Math.min(hList.size(), Math.floor(hashes.length * size));
         // a minimum of 3 hashes ...
-        if (numHashes < 3) numHashes = 3;
+        if (numHashes < 3) {
+            numHashes = 3;
+        }
 
         BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
         for (int i = 0; i < numHashes; i++) {
             // be aware that the hashFunctionsFileName of the field must match the one you put the hashes in before.
             queryBuilder.add(new BooleanClause(new TermQuery(new Term(paramField, hList.get(i))), BooleanClause.Occur.SHOULD));
         }
-        BooleanQuery query = queryBuilder.build();
         // this query is just for boosting the results with more matching hashes. We'd need to match it to all docs.
-//        query.add(new BooleanClause(new MatchAllDocsQuery(), BooleanClause.Occur.SHOULD));
+        //queryBuilder.add(new BooleanClause(new MatchAllDocsQuery(), BooleanClause.Occur.SHOULD));
+        BooleanQuery query = queryBuilder.build();
         return query;
     }
 
@@ -627,13 +704,15 @@ public class LireRequestHandler extends RequestHandlerBase {
     private List<String> orderHashes(int[] hashes, String paramField, boolean removeZeroDocFreqTerms) {
         List<String> hList = new ArrayList<>(hashes.length);
         // creates a list of terms.
-        for (int i = 0; i < hashes.length; i++) {
-            hList.add(Integer.toHexString(hashes[i]));
+        for (int hashe : hashes) {
+            hList.add(Integer.toHexString(hashe));
         }
         // uses our predetermined hash term stats object to sort the list
         Collections.sort(hList, (o1, o2) -> HashTermStatistics.docFreq(paramField, o1) - HashTermStatistics.docFreq(paramField, o2));
         // removing those with zero entries but leaving at least three.
-        while (HashTermStatistics.docFreq(paramField, hList.get(0)) < 1 && hList.size() > 3) hList.remove(0);
+        while (HashTermStatistics.docFreq(paramField, hList.get(0)) < 1 && hList.size() > 3) {
+            hList.remove(0);
+        }
         return hList;
     }
 
@@ -649,21 +728,35 @@ public class LireRequestHandler extends RequestHandlerBase {
     private List<Term> createTermFilter(int[] hashes, String paramField, double size) {
         List<String> hList = new ArrayList<>(hashes.length);
         // creates a list of terms.
-        for (int i = 0; i < hashes.length; i++) {
-            hList.add(Integer.toHexString(hashes[i]));
+        for (int hashe : hashes) {
+            hList.add(Integer.toHexString(hashe));
         }
         // uses our predetermined hash term stats object to sort the list
         Collections.sort(hList, (o1, o2) -> HashTermStatistics.docFreq(paramField, o1) - HashTermStatistics.docFreq(paramField, o2));
         // removing those with zero entries but leaving at least three.
-        while (HashTermStatistics.docFreq(paramField, hList.get(0)) < 1 && hList.size() > 3) hList.remove(0);
+        while (HashTermStatistics.docFreq(paramField, hList.get(0)) < 1 && hList.size() > 3) {
+            hList.remove(0);
+        }
         int numHashes = (int) Math.min(hList.size(), Math.floor(hashes.length * size));
         // a minimum of 3 hashes ...
-        if (numHashes < 3) numHashes = 3;
+        if (numHashes < 3) {
+            numHashes = 3;
+        }
         LinkedList<Term> termFilter = new LinkedList<Term>();
         for (int i = 0; i < numHashes; i++) {
             // be aware that the hashFunctionsFileName of the field must match the one you put the hashes in before.
             termFilter.add(new Term(paramField, Integer.toHexString(hashes[i])));
         }
         return termFilter;
+    }
+
+    private BytesRef getBytesRef(BinaryDocValues bdv, int docId)
+            throws IOException {
+        if (bdv != null && bdv.advance(docId) == docId) {
+//        if (bdv != null && bdv.docID() < docId && bdv.advance(docId) == docId) {
+//        if (bdv != null && bdv.advanceExact(docId)) {
+            return bdv.binaryValue();
+        }
+        return new BytesRef(BytesRef.EMPTY_BYTES);
     }
 }
