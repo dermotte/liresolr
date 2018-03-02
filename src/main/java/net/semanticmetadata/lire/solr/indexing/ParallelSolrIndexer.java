@@ -335,8 +335,10 @@ public class ParallelSolrIndexer implements Runnable {
                 c.start();
                 threads.add(c);
             }
-            Thread m = new Thread(new Monitoring(), "Monitoring");
-            m.start();
+            if (ParallelSolrIndexer.numberOfThreads > 1) {
+                Thread m = new Thread(new Monitoring(), "Monitoring");
+                m.start();
+            }
             for (Iterator<Thread> iterator = threads.iterator(); iterator.hasNext(); ) {
                 iterator.next().join();
             }
