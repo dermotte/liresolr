@@ -1,5 +1,6 @@
 package net.semanticmetadata.lire.solr;
 
+import net.semanticmetadata.lire.imageanalysis.features.GenericDoubleLireFeature;
 import net.semanticmetadata.lire.imageanalysis.features.GlobalFeature;
 import net.semanticmetadata.lire.imageanalysis.features.global.*;
 import net.semanticmetadata.lire.imageanalysis.features.global.joint.JointHistogram;
@@ -50,6 +51,9 @@ public class FeatureRegistry {
         codeToClass.put("jh", JointHistogram.class);
         codeToClass.put("sc", ScalableColor.class);
         codeToClass.put("pc", SPCEDD.class);
+        // GenericFeatures filled with whatever one prefers.
+        codeToClass.put("df", GenericGlobalDoubleFeature.class);
+        codeToClass.put("if", GenericGlobalIntFeature.class);
 
         // local feature based histograms.
         // codeToClass.put("sim_ce", GenericByteLireFeature.class); // SIMPLE CEDD ... just to give a hint how it might look like.

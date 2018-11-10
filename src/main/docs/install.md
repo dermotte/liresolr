@@ -1,5 +1,5 @@
 # SOLR Installation
-*Version: 6.4.0*
+*Version: 7.5.0*
 
 ## First Steps: Get Solr running
 Using the plain Solr installation in bin\solr start it with
@@ -8,7 +8,7 @@ $> bin/solr start
 ```
 Then one should basically create a core using
 ```
-$> bin/solr create_collection -c lire -d basic_configs
+$> bin/solr create_core -c lire
 ```
 Then you are up to changing the config files to your need. To check if it worked point your browser to http://localhost:[port]/ whereas the port should be stated in your shell, where you started Solr.
 

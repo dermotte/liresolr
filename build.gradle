@@ -7,7 +7,7 @@ apply plugin: 'project-report'
 sourceCompatibility = 1.8
 version = project.property('versionString') + '_build' + project.property('buildNumber')
 
-def solrVersion = '7.2.1'
+def solrVersion = '7.5.0'
 
 repositories {
     mavenLocal()
@@ -33,10 +33,10 @@ dependencies {
     // https://mvnrepository.com/artifact/org.apache.solr/solr-solrj
 
     // ---< Commons >---
-    compile group: 'commons-io', name: 'commons-io', version: '2.5'
+    compile group: 'commons-io', name: 'commons-io', version: '2.6'
     compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
     // https://mvnrepository.com/artifact/commons-codec/commons-codec
-    compile group: 'commons-codec', name: 'commons-codec', version: '1.10'
+    compile group: 'commons-codec', name: 'commons-codec', version: '1.11'
     // https://mvnrepository.com/artifact/com.sangupta/jopensurf
     compile group: 'com.sangupta', name: 'jopensurf', version: '1.0.0'
     // https://mvnrepository.com/artifact/org.bytedeco.javacpp-presets/opencv
@@ -44,7 +44,7 @@ dependencies {
 
     // ---< Helper files >---
     // https://mvnrepository.com/artifact/com.twelvemonkeys.imageio/imageio-jpeg
-    compile group: 'com.twelvemonkeys.imageio', name: 'imageio-jpeg', version: '3.3.1'
+    compile group: 'com.twelvemonkeys.imageio', name: 'imageio-jpeg', version: '3.4.1'
 
     // ---< Current version of LIRE >---
     compile fileTree(dir: 'lib', include: '*.jar')
@@ -83,8 +83,9 @@ jar {
  */
 task distForSolr(type: Copy, dependsOn: jar) {
     delete './dist'
-    String path = './dist'
-//    String path = 'D:/Java/Libs/solr-6.4.0/server/solr-webapp/webapp/WEB-INF/lib/'
+    // String path = './dist'
+    // change the path variable to copy it to your Solr installation directory ...
+    String path = '../../applications/solr-7.5.0/server/solr-webapp/webapp/WEB-INF/lib'
     String lsJar = 'liresolr.jar'
     String liJar = 'lire.jar'
     delete path + lsJar
@@ -137,6 +138,14 @@ task runParallelIndexer(type: JavaExec) {
     main = 'net.semanticmetadata.lire.solr.indexing.ParallelSolrIndexer'
 
     // arguments to pass to the application
-    args('-i /temp/images.lst -f -o /temp/images-out.xml -n 8'.split(' '))
+    args('-i images.txt -f -o images-out.xml -n 8'.split(' '))
+}
+
+task runFlickrDownloader(type: JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    main = 'net.semanticmetadata.lire.solr.tools.FlickrSolrIndexingTool'
+
+    // arguments to pass to the application
+    args('-o auto -n 20'.split(' '))
 }
 
