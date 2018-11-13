@@ -26,7 +26,7 @@ public class FlickrSolrIndexingTool {
     static String helpMessage = "$> FlickrSolrIndexingTool -o <outfile.xml|auto> [-n <number_of_photos>] [-s]\n\n" +
             "Options\n" +
             "=======\n" +
-            "-s \t store the images localy as temp files.";
+            "-s \t store the images locally as temp files.";
     private static int numThreads = 8;
     protected static boolean saveDownloadedImages = false;
 

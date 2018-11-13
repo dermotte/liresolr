@@ -119,12 +119,12 @@ task prepareForDockerImage(type: Copy, dependsOn: distForSolr) {
     from ('src/main/docker') into path
 }
 
-task createCommandlineDownloader(type: Jar, dependsOn: build) {
+task createFlickrDownloader(type: Jar, dependsOn: build) {
     archiveName = 'flickrdownloader.jar'
     destinationDir = project.getRootDir()
 
     from { Project.DEFAULT_BUILD_DIR_NAME + "/classes/main" }
-    from { zipTree("lib/LIRE-1.0_b04.jar") }
+    from { zipTree("lib/LIRE-1.0_b05.jar") }
 
     manifest.attributes(
             'Main-Class': 'net.semanticmetadata.lire.solr.tools.FlickrSolrIndexingTool',
