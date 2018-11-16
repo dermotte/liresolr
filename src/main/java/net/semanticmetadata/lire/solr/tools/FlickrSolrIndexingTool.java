@@ -1,6 +1,7 @@
 package net.semanticmetadata.lire.solr.tools;
 
 import net.semanticmetadata.lire.indexers.hashing.BitSampling;
+import net.semanticmetadata.lire.solr.HashingMetricSpacesManager;
 import net.semanticmetadata.lire.utils.CommandLineUtils;
 import org.xml.sax.SAXException;
 
@@ -31,7 +32,7 @@ public class FlickrSolrIndexingTool {
     protected static boolean saveDownloadedImages = false;
 
     public static void main(String[] args) throws ParserConfigurationException, SAXException, IOException, InterruptedException {
-        BitSampling.readHashFunctions();
+        HashingMetricSpacesManager.init();
         int numberOfImages = 20;
 
         Properties p = CommandLineUtils.getProperties(args, helpMessage, new String[]{"-o"});

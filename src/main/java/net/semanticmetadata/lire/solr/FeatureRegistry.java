@@ -54,6 +54,7 @@ public class FeatureRegistry {
         // GenericFeatures filled with whatever one prefers.
         codeToClass.put("df", GenericGlobalDoubleFeature.class);
         codeToClass.put("if", GenericGlobalIntFeature.class);
+        codeToClass.put("sf", GenericGlobalShortFeature.class);
 
         // local feature based histograms.
         // codeToClass.put("sim_ce", GenericByteLireFeature.class); // SIMPLE CEDD ... just to give a hint how it might look like.

@@ -29,7 +29,7 @@ public class HashingMetricSpacesManager {
             e.printStackTrace();
         }
         try {
-            BitSampling.readHashFunctions(); // load BitSampling data from disk.
+            BitSampling.readHashFunctions(classloader.getResourceAsStream("lsh/LshBitSampling_2048.obj")); // load BitSampling data from disk.
         } catch (IOException e) {
             e.printStackTrace();
         }

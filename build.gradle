@@ -85,7 +85,7 @@ task distForSolr(type: Copy, dependsOn: jar) {
     delete './dist'
     // String path = './dist'
     // change the path variable to copy it to your Solr installation directory ...
-    String path = '../../applications/solr-7.5.0/server/solr-webapp/webapp/WEB-INF/lib'
+    String path = '../../Applications/solr-7.5.0/server/solr-webapp/webapp/WEB-INF/lib'
     String lsJar = 'liresolr.jar'
     String liJar = 'lire.jar'
     delete path + lsJar
@@ -125,6 +125,7 @@ task createFlickrDownloader(type: Jar, dependsOn: build) {
 
     from { Project.DEFAULT_BUILD_DIR_NAME + "/classes/main" }
     from { zipTree("lib/LIRE-1.0_b05.jar") }
+    from { Project.DEFAULT_BUILD_DIR_NAME + "/resources/main" }
 
     manifest.attributes(
             'Main-Class': 'net.semanticmetadata.lire.solr.tools.FlickrSolrIndexingTool',
@@ -138,7 +139,7 @@ task runParallelIndexer(type: JavaExec) {
     main = 'net.semanticmetadata.lire.solr.indexing.ParallelSolrIndexer'
 
     // arguments to pass to the application
-    args('-i images.txt -f -o images-out.xml -n 8'.split(' '))
+    args('-i images_04_50k.lst -f -o images_04_50k.xml -n 4'.split(' '))
 }
 
 task runFlickrDownloader(type: JavaExec) {

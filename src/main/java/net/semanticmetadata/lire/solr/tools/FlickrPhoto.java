@@ -10,7 +10,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Base64;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -93,18 +92,11 @@ public class FlickrPhoto implements Runnable {
         bufferedWriter.append(Base64.getEncoder().encodeToString(globalFeature.getByteArrayRepresentation()));
         bufferedWriter.append("</field>");
         bufferedWriter.append("<field name=\"" + fieldName + "_ha\">");
-        bufferedWriter.append(arrayToString(BitSampling.generateHashes(globalFeature.getFeatureVector())));
+        bufferedWriter.append(Utilities.hashesArrayToString(BitSampling.generateHashes(globalFeature.getFeatureVector())));
         bufferedWriter.append("</field>");
     }
 
-    public String arrayToString(int[] array) {
-        StringBuilder sb = new StringBuilder(array.length * 8);
-        for (int i = 0; i < array.length; i++) {
-            if (i > 0) sb.append(' ');
-            sb.append(Integer.toHexString(array[i]));
-        }
-        return sb.toString();
-    }
+
 
     public String getXml() {
         return xml;

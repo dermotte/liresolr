@@ -8,6 +8,9 @@ import math
 import urllib
 import xml.etree.ElementTree as ET
 import os.path
+import traceback
+
+allFeatures = np.array([])
 
 # install with pip: tensorflow, keras, h5py
 
@@ -29,8 +32,8 @@ if len(sys.argv) < 2:
     sys.exit()
 
 
-def myPredict(myModel, img_path):
-    img = image.load_img(img_path, target_size=(224, 224))
+def predictClasses(myModel, img):
+    # img = image.load_img(img_path, target_size=(224, 224))
     x = image.img_to_array(img)
     x = np.expand_dims(x, axis=0)
     x = preprocess_input(x)
@@ -46,6 +49,25 @@ def myPredict(myModel, img_path):
     return tmpString
 
 
+def extractFeatures(myModel, img):
+    # img = image.load_img(img_path, target_size=(224, 224))
+    x = image.img_to_array(img)
+    x = np.expand_dims(x, axis=0)
+    x = preprocess_input(x)
+
+    features = myModel.predict(x)[0,]
+    features = features / np.max(features)  # max norm
+    # features = features / np.linalg.norm(features, ord=2)  # L2 norm
+    features = np.ndarray.astype(features*32767*2-32768, dtype='int16')  # stretching it over the whole range of short ...
+    global allFeatures
+    allFeatures = np.append(allFeatures, features)
+    dataString = ''
+    for f in features:
+        dataString += str(f) + ';'
+    cmd = 'java -cp flickrdownloader.jar net.semanticmetadata.lire.solr.tools.DataConversion -t short -d \"x' + dataString + "\""
+    return os.popen(cmd).read()
+
+
 # loading the model
 model_categories = ResNet50(weights='imagenet')
 model_features = ResNet50(weights='imagenet', include_top=False, pooling='avg')
@@ -58,7 +80,7 @@ if (sys.argv[1] == "auto"):
     sys.argv[1] = "flickrphotos-" + str(fileNumber) + ".xml"  # set new file name ...
 
 if not (os.path.isfile(sys.argv[1])):
-    os.system("java -jar flickrdownloader.jar -s -n 20 -o " + sys.argv[1])
+    os.system("java -jar flickrdownloader.jar -s -n 50 -o " + sys.argv[1])
 
 tree = ET.parse(sys.argv[1])
 root = tree.getroot()
@@ -78,16 +100,35 @@ for doc in root:
             imagefile = downloaded[0]
         else:
             doc.remove(imagefileField)
+
+        img = image.load_img(imagefile, target_size=(224, 224))
+        # ### creating the categories based on ResNet50
         e = ET.Element('field', {'name': 'categories_ws'})
         # e.text = "cat cat dog"
-        e.text = myPredict(model_categories, imagefile)
+        e.text = predictClasses(model_categories, img)
         doc.append(e)
         print(imagefile + ': ' + e.text)
-        os.remove(imagefile)
+
+        # ### creating the feature vectors based on ResNet50,
+        e2 = ET.Element('field', {'name': 'sf_hi'})  # storing in a short feature right now.
+        e3 = ET.Element('field', {'name': 'sf_ha'})  # storing in a short feature right now.
+        # e2 = ET.Element('field', {'name': 'df_hi'})  # storing in a double feature right now.
+        features = extractFeatures(model_features, img).split('|')
+        e2.text = features[0]
+        e3.text = features[1]
+        doc.append(e2)
+        doc.append(e3)
+        print(imagefile + ': ' + e2.text)
+
+        # ### removing the temp file, clean up.
+        # os.remove(imagefile)
     except:
-        print('error with ' + field.text)
+        print('error with ' + imagefile)  # general description
+        traceback.print_stack()  # full error description?
         pass
 tree.write(os.path.splitext(sys.argv[1])[0] + "_cat.xml")
+print(allFeatures)
+
 
 # reading images from a file
 # lines = [line.rstrip('\n') for line in open(sys.argv[1])]

@@ -132,7 +132,7 @@ public class ParallelSolrIndexer implements Runnable {
     }
 
     public static void main(String[] args) throws IOException {
-        BitSampling.readHashFunctions();
+        HashingMetricSpacesManager.init();
         ParallelSolrIndexer e = new ParallelSolrIndexer();
 
         // parse programs args ...
@@ -529,6 +529,9 @@ public class ParallelSolrIndexer implements Runnable {
                         }
                         // --------< creating doc >-------------------------
                         sb.append("<doc>");
+                        sb.append("<field name=\"localimagefile\">");
+                        sb.append(tmp.getFileName());
+                        sb.append("</field>");
                         sb.append("<field name=\"id\">");
                         if (idp == null)
                             sb.append(tmp.getFileName());
