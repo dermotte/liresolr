@@ -85,7 +85,7 @@ task distForSolr(type: Copy, dependsOn: jar) {
     delete './dist'
     // String path = './dist'
     // change the path variable to copy it to your Solr installation directory ...
-    String path = '../../Applications/solr-7.5.0/server/solr-webapp/webapp/WEB-INF/lib'
+    String path = '../../applications/solr-7.5.0/server/solr-webapp/webapp/WEB-INF/lib'
     String lsJar = 'liresolr.jar'
     String liJar = 'lire.jar'
     delete path + lsJar
