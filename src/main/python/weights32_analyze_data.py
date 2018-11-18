@@ -1,8 +1,12 @@
 import re
 import numpy as np
 import matplotlib.pyplot as plt
+import json
+from pathlib import Path
 
-input_file = '/home/mlux/projects/wipo2018/train/weights32.txt'
+home_directory = str(Path.home())
+
+input_file = home_directory + '/projects/wipo2018/train/weights32.txt'
 state = 0
 count_images = 0
 count_classes = 0
@@ -36,3 +40,4 @@ if __name__ == '__main__':
 
     print("{} files".format(count_images))
     arr = np.array(weights, dtype=float)  # min=3.95, max=33.62
+    json.dump(data, open(home_directory + "/tmp/test.json", 'w'))
