@@ -15,7 +15,7 @@ Then you are up to changing the config files to your need. To check if it worked
 ## Where to learn more?
 I assume the better way to learn to handle Solr is by reading the Solr documentation:
 
-1. [Solr Reference Guide](https://cwiki.apache.org/confluence/display/solr/Getting+Started)
+1. [Solr Reference Guide](https://lucene.apache.org/solr/guide/7_5/getting-started.html)
 1. [Solr web page](http://lucene.apache.org/solr/)
 1. [Using Xml messages to update the index](https://wiki.apache.org/solr/UpdateXmlMessages)
 

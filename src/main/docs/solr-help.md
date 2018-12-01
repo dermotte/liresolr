@@ -19,3 +19,7 @@ Or using `curl` with XML files
 ```
 curl http://localhost:8983/solr/lire/update -H "Content-Type: text/xml" --data-binary @input-data.xml
 ```
+
+## Problems with the cache
+
+If sorting with the lirefunc doesn't work as intended, i.e. if the first sort works for each query, but all following do deliver the same results, then caching gets in the way. 
