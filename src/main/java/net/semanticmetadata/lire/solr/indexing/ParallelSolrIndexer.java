@@ -61,8 +61,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * This indexing application allows for parallel extraction of global features from multiple image files for
- * use with the LIRE Solr plugin. It basically takes a list of images (ie. created by something like
- * "dir /s /b &gt; list.txt" or "ls [some parameters] &gt; list.txt".
+ * use with the LIRE Solr plugin. It basically takes a list of images, i.e. created by something like
+ * "dir /s /b &gt; list.txt" or "find /path/to/images -name "*.jpg" &gt; list.txt".
  *
  * use it like:
  * <pre>$&gt; java -jar lire-request-handler.jar -i &lt;infile&gt; [-o &lt;outfile&gt;] [-n &lt;threads&gt;] [-m &lt;max_side_length&gt;] [-f]</pre>
@@ -427,7 +427,7 @@ public class ParallelSolrIndexer implements Runnable {
                 while ((file = br.readLine()) != null) {
                     next = new File(file);
                     try {
-                        // reading from harddrive to buffer to reduce the load on the HDD and move decoding to the
+                        // reading from hard drive to buffer to reduce the load on the HDD and move decoding to the
                         // consumers using java.nio
                         int fileSize = (int) next.length();
                         byte[] buffer = new byte[fileSize];
