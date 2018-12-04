@@ -103,7 +103,7 @@ Parameters:
 -   **accuracy** .. double in [0.05, 1] indicates how many query terms should be in the queries.
 
 
-Function querioes with lirefunc
+Function queries with lirefunc
 -------------------------------
 The function `lirefunc(arg1,arg2)` is available for function queries. Two arguments are necessary and are defined as:
 
@@ -131,6 +131,13 @@ If you extract the features yourself, use code like his one:
     ph.extract(ImageIO.read(new File("...")));
     String arg1 = "ph";
     String arg2 = Base64.getEncoder().encodeToString(ph.getByteArrayRepresentation());
+    
+If you experiencing problems with a query having always the same results after changing the lirefunc parameters, you have to disable the cache of ordered search results by setting the size of the `queryResultCache`to `0`. The downside of this approach is that for paging the query has to be run through Solr over and over again.
+
+    <queryResultCache class="solr.LRUCache"
+                      size="0"
+                      initialSize="0"
+                      autowarmCount="0"/>
 
 
 Installation
@@ -265,4 +272,4 @@ Another way is to use the LireEntityProcessor. Then you have to reference the *s
         </document>
     </dataConfig>
 
-*Mathias Lux, 2016-12-27*
+*Mathias Lux, 2018-12-01*

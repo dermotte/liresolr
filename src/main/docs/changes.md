@@ -1,5 +1,18 @@
 # LireSolr Change Log
 
+**2017-12-01**
+* Performance tests on lirefunc + RandomAccessBinaryDocValues
+* Updated documentation on the LRUCache
+
+**2017-11-16**
+* Added merge tool based on DOM4j
+
+**2017-11-15**
+* Converged to Solr 7.5.0
+
+**2017-11-10**
+* Updated Docker file
+
 **2017-02-05**
 * Implemented image caching for FlickrDownloader tool and the respective use of the cache in the Python file for image classification.
 

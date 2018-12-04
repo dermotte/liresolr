@@ -46,6 +46,10 @@ dependencies {
     // https://mvnrepository.com/artifact/com.twelvemonkeys.imageio/imageio-jpeg
     compile group: 'com.twelvemonkeys.imageio', name: 'imageio-jpeg', version: '3.4.1'
 
+    // ---< Dom4j & Jaxen for XPath because StaX is often too complicated >---
+    compile 'org.dom4j:dom4j:2.1.1'
+    compile 'jaxen:jaxen:1.1.6'
+
     // ---< Current version of LIRE >---
     compile fileTree(dir: 'lib', include: '*.jar')
     runtime fileTree(dir: 'lib', include: '*.jar')
@@ -85,7 +89,7 @@ task distForSolr(type: Copy, dependsOn: jar) {
     delete './dist'
     // String path = './dist'
     // change the path variable to copy it to your Solr installation directory ...
-    String path = '../../Applications/solr-7.5.0/server/solr-webapp/webapp/WEB-INF/lib'
+    String path = '../../applications/solr-7.5.0/server/solr-webapp/webapp/WEB-INF/lib'
     String lsJar = 'liresolr.jar'
     String liJar = 'lire.jar'
     delete path + lsJar
@@ -139,7 +143,7 @@ task runParallelIndexer(type: JavaExec) {
     main = 'net.semanticmetadata.lire.solr.indexing.ParallelSolrIndexer'
 
     // arguments to pass to the application
-    args('-i images_04_50k.lst -f -o images_04_50k.xml -n 4'.split(' '))
+    args('-i images-wipo.lst -f -o images-wipo.xml -n 4'.split(' '))
 }
 
 task runFlickrDownloader(type: JavaExec) {
