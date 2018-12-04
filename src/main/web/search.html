@@ -4,22 +4,13 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Lire Solr Search Demo</title>
-
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <title>LireSolr Search Debug</title>
 
     <!-- Latest compiled and minified CSS -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
-          integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
-
-    <!-- Optional theme -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css"
-          integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
-
-    <!-- Latest compiled and minified JavaScript -->
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
-            integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
-            crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
 
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
           crossorigin="anonymous">
@@ -192,7 +183,7 @@
 <body>
 <div class="container">
     <div class="row">
-        <div class="col-md-8"><h1>LireSolr Demo</h1></div>
+        <div class="col-md-8"style="margin-top: 1em"><h1>LireSolr Demo</h1></div>
         <div class="col-md-4 text-right" style="margin-top: 1em">
             <p>
                 <small><i>Created by Mathias Lux</i></small>
@@ -208,71 +199,88 @@
             <div>
 
                 <!-- Nav tabs -->
-                <ul class="nav nav-pills" role="tablist">
-                    <li role="presentation" class="active"><a href="#search" aria-controls="search" role="tab"
-                                                              data-toggle="tab">Search Parameters</a></li>
-                    <li role="presentation"><a href="#image" aria-controls="image" role="tab" data-toggle="tab">Search
-                        by Image</a></li>
-                    <li role="presentation"><a href="#text" aria-controls="text" role="tab" data-toggle="tab">Search by
-                        Text</a></li>
+                <ul class="nav nav-tabs" role="tablist">
+                    <li role="presentation" class="nav-item">
+                        <!--a href="#search" aria-controls="search" role="tab" data-toggle="tab">Search Parameters</a-->
+                        <a  class="nav-link active" id="home-tab" data-toggle="tab" href="#search" role="tab" aria-controls="home-tab" aria-selected="true">Search Parameters</a>
+                    </li>
+                    <li role="presentation" class="nav-item">
+                        <!--a href="#image" aria-controls="image" role="tab" data-toggle="tab">Search by Image</a-->
+                        <a class="nav-link" id="profile-tab" data-toggle="tab" href="#image" role="tab" aria-controls="profile" aria-selected="false">Search by Image</a>
+                    </li>
+                    <li role="presentation" class="nav-item">
+                        <!--a href="#text" aria-controls="text" role="tab" data-toggle="tab">Search by Text</a-->
+                        <a class="nav-link" id="contact-tab" data-toggle="tab" href="#text" role="tab" aria-controls="contact" aria-selected="false">Search by Text</a>
+                    </li>
                 </ul>
-
-                <!-- Tab panes -->
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12"><!-- Tab panes -->
                 <form>
                     <fieldset id="searchfieldset">
                         <div class="tab-content">
                             <div role="tabpanel" class="tab-pane active" id="search">
-                                <div class="form-group col-md-6">
-                                    <label for="searchTypeSelect" class="control-label">Search method</label>
-                                    <select id="searchTypeSelect" class="form-control input-sm">
-                                        <option value="lireq">Lire Request Handler</option>
-                                        <option value="allsort">Match all documents and sort</option>
-                                        <option value="hashsort">Hash filter query and sort</option>
-                                        <option value="mlt">More like this on categories</option>
-                                        <!--option>Boosted query</option-->
-                                    </select>
+                                <div class="row">
+                                    <div class="form-group col-md-6">
+                                        <label for="searchTypeSelect" class="control-label">Search method</label>
+                                        <select id="searchTypeSelect" class="form-control input-sm">
+                                            <option value="lireq">Lire Request Handler</option>
+                                            <option value="allsort">Match all documents and sort</option>
+                                            <option value="hashsort">Hash filter query and sort</option>
+                                            <option value="mlt">More like this on categories</option>
+                                            <!--option>Boosted query</option-->
+                                        </select>
+                                    </div>
+                                    <div class="form-group col-md-6">
+                                        <label for="searchUrlQueryFeature" class="control-label">Search feature</label>
+                                        <select id="searchUrlQueryFeature" class="form-control input-sm">
+                                            <option value="ph">PHOG</option>
+                                            <option value="ce">CEDD</option>
+                                            <option value="cl">ColorLayout</option>
+                                            <option value="sc">ScalableColor</option>
+                                            <option value="jc">JCD</option>
+                                            <option value="oh">OpponentHistogram</option>
+                                            <option value="sf">Deep Features</option>
+                                            <!--option>Boosted query</option-->
+                                        </select>
+                                    </div>
                                 </div>
-                                <div class="form-group col-md-6">
-                                    <label for="searchUrlQueryFeature" class="control-label">Search feature</label>
-                                    <select id="searchUrlQueryFeature" class="form-control input-sm">
-                                        <option value="ph">PHOG</option>
-                                        <option value="ce">CEDD</option>
-                                        <option value="cl">ColorLayout</option>
-                                        <option value="sc">ScalableColor</option>
-                                        <option value="jc">JCD</option>
-                                        <option value="oh">OpponentHistogram</option>
-                                        <option value="sf">Deep Features</option>
-                                        <!--option>Boosted query</option-->
-                                    </select>
-                                </div>
-                                <div class="form-group col-md-3">
-                                    <label for="numResults" class="control-label"># Results</label>
-                                    <input type="number" id="numResults" class="form-control input-sm"
-                                           min="10" max="500" step="10" value="20"/>
-                                </div>
-                                <div class="form-group col-md-3">
-                                    <label for="accuracyInput" class="control-label">Accuracy</label>
-                                    <input type="number" id="accuracyInput" class="form-control input-sm" min="0.05"
-                                           max="1.00" step="0.05" value="0.35"/>
-                                </div>
-                                <div class="form-group col-md-3">
-                                    <label for="numCandidatesInput" class="control-label"># Candidates</label>
-                                    <input type="number" id="numCandidatesInput" class="form-control input-sm"
-                                           min="100" max="100000" step="100" value="1000"/>
+                                <div class="row">
+                                    <div class="form-group col-md-3">
+                                        <label for="numResults" class="control-label"># Results</label>
+                                        <input type="number" id="numResults" class="form-control input-sm"
+                                               min="10" max="500" step="10" value="20"/>
+                                    </div>
+                                    <div class="form-group col-md-3">
+                                        <label for="accuracyInput" class="control-label">Accuracy</label>
+                                        <input type="number" id="accuracyInput" class="form-control input-sm" min="0.05"
+                                               max="1.00" step="0.05" value="0.35"/>
+                                    </div>
+                                    <div class="form-group col-md-3">
+                                        <label for="numCandidatesInput" class="control-label"># Candidates</label>
+                                        <input type="number" id="numCandidatesInput" class="form-control input-sm"
+                                               min="100" max="100000" step="100" value="1000"/>
+                                    </div>
                                 </div>
                             </div>
                             <div role="tabpanel" class="tab-pane" id="image">
-                                <div class="form-group col-md-12">
-                                    <label for="searchUrlQuery" class="control-label">Image URL</label>
-                                    <input type="text" id="searchUrlQuery" class="form-control input-sm"
-                                           placeholder="http://...">
+                                <div class="row">
+                                    <div class="form-group col-md-12">
+                                        <label for="searchUrlQuery" class="control-label">Image URL</label>
+                                        <input type="text" id="searchUrlQuery" class="form-control input-sm"
+                                               placeholder="http://...">
+                                    </div>
                                 </div>
                             </div>
                             <div role="tabpanel" class="tab-pane" id="text">
-                                <div class="form-group col-md-12">
-                                    <label for="searchTextQuery" class="control-label">Search query</label>
-                                    <input type="text" id="searchTextQuery" class="form-control input-sm"
-                                           placeholder="title:*">
+                                <div class="row">
+                                    <div class="form-group col-md-12">
+                                        <label for="searchTextQuery" class="control-label">Search query</label>
+                                        <input type="text" id="searchTextQuery" class="form-control input-sm"
+                                               placeholder="title:*">
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -280,8 +288,13 @@
                 </form>
             </div>
         </div>
+    <div class="row">
+        <div class="col-md-12">
+            <label for="searchTextQuery" class="control-label">Request URI</label>
+            <input type="text" id="reqUrl" class="form-control input-sm" placeholder="select?..." disabled>
+        </div>
     </div>
-</div>
+    </div>
 <div class="container">
     <div class="row">
         <div class="col-xs-12" id="results" hidden>
