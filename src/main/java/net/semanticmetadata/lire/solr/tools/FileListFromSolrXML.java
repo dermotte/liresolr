@@ -1,5 +1,6 @@
 package net.semanticmetadata.lire.solr.tools;
 
+import org.apache.commons.cli.*;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
@@ -26,19 +27,33 @@ public class FileListFromSolrXML implements Runnable {
         }
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws ParseException {
         File infile = null, outfile = null;
-        // check if the -i parameter is given and if so if the given file exists.
-        for (int i = 0; i < args.length; i++) {
-            String arg = args[i];
-            if (arg.startsWith("-i") & i + 1 < args.length) {
-                String infilepath = args[i + 1];
-                infile = new File(infilepath);
-                if (!infile.exists()) infile = null;
+
+        Options options = new Options();
+        options.addOption("i", "input-file", true, "CSV File to import (required)");
+        options.addOption("o", "output-file", true, "XML File to export, will not be overwritten");
+        options.getOption("i").setRequired(true);
+        CommandLineParser parser = new DefaultParser();
+        CommandLine cmd = parser.parse( options, args);
+        if (cmd.hasOption('i')) {
+            infile = new File(cmd.getOptionValue('i'));
+            if (!infile.exists()) {
+                System.err.println(String.format("File %s does not exist.", cmd.getOptionValue('i')));
+                infile = null;
             }
-            if (arg.startsWith("-o") & i + 1 < args.length) {
-                String outfilepath = args[i + 1];
-                outfile = new File(outfilepath);
+        }
+        if (infile != null) {
+            // check for the output file:
+            if (cmd.hasOption('o')) {
+                outfile = new File(cmd.getOptionValue('o'));
+            } else {
+                outfile = new File(cmd.getOptionValue('i').replace(".xml", ".lst"));
+            }
+            // check if the output file exists
+            if (outfile.exists()) {
+                infile = null;  // go to error state.
+                System.err.println(String.format("File %s already exists and will not be overwritten.", cmd.getOptionValue('o')));
             }
         }
 
@@ -49,16 +64,9 @@ public class FileListFromSolrXML implements Runnable {
             else e = new FileListFromSolrXML(infile, outfile);
             e.run();
         } else {
-            printHelp();
+            HelpFormatter formatter = new HelpFormatter();
+            formatter.printHelp("FileListFromSolrXML", options);
         }
-    }
-
-    private static void printHelp() {
-        System.out.println("This help text is shown if you start the FileListFromSolrXML with the '-h' option.\n" +
-                "\n" +
-                "$> FileListFromSolrXML -i <infile> -o <outfile>\n" +
-                "\n" +
-                "An existing <infile> is mandatory. ");
     }
 
     @Override

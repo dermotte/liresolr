@@ -37,6 +37,8 @@ dependencies {
     compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
     // https://mvnrepository.com/artifact/commons-codec/commons-codec
     compile group: 'commons-codec', name: 'commons-codec', version: '1.11'
+    // https://mvnrepository.com/artifact/commons-cli/commons-cli
+    compile group: 'commons-cli', name: 'commons-cli', version: '1.4'
     // https://mvnrepository.com/artifact/com.sangupta/jopensurf
     compile group: 'com.sangupta', name: 'jopensurf', version: '1.0.0'
     // https://mvnrepository.com/artifact/org.bytedeco.javacpp-presets/opencv
@@ -144,6 +146,14 @@ task runParallelIndexer(type: JavaExec) {
 
     // arguments to pass to the application
     args('-i images-wipo.lst -f -o images-wipo.xml -n 4'.split(' '))
+}
+
+task runImportFromCSV(type: JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    main = 'net.semanticmetadata.lire.solr.indexing.ImportFromCSV'
+
+    // run this with 
+    // $> gradle runImportFromCSV --args='-i in.csv -o out.xml'
 }
 
 task runFlickrDownloader(type: JavaExec) {

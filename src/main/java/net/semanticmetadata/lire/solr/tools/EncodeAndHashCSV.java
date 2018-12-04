@@ -3,6 +3,7 @@ package net.semanticmetadata.lire.solr.tools;
 import net.semanticmetadata.lire.imageanalysis.features.global.GenericGlobalShortFeature;
 import net.semanticmetadata.lire.indexers.hashing.BitSampling;
 import net.semanticmetadata.lire.solr.HashingMetricSpacesManager;
+import org.apache.commons.cli.*;
 import org.dom4j.Document;
 import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
@@ -17,40 +18,55 @@ import java.util.*;
 public class EncodeAndHashCSV implements Runnable {
     private static int TOP_N_CLASSES = 32;
     private static double MAXIMUM_FEATURE_VALUE = 64d;
-    File infile;
+    private static double TOP_CLASSES_FACTOR = 1d;
+    File infile, outfile;
 
-    public EncodeAndHashCSV(File infile) {
+    public EncodeAndHashCSV(File infile, File outfile) {
         this.infile = infile;
+        this.outfile = outfile;
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws ParseException {
         HashingMetricSpacesManager.init();
-        File infile = null;
-        // check if the -i parameter is given and if so if the given file exists.
-        for (int i = 0; i < args.length; i++) {
-            String arg = args[i];
-            if (arg.startsWith("-i") & i+1 < args.length) {
-                String infilepath = args[i+1];
-                infile = new File(infilepath);
-                if (!infile.exists()) infile = null;
+        File infile = null, outfile = null;
+
+        // Using Apache Commons CLI for parsing the command line options.
+        Options options = new Options();
+        options.addOption("i", "input-file", true, "CSV File to import (required)");
+        options.addOption("o", "output-file", true, "XML File to export, will not be overwritten");
+        options.addOption("t", "top-n-classes", true, "The number of top classes used for indexing");
+        options.addOption("m", "maximum-value", true, "The maximum feature value used for normalization");
+        options.getOption("i").setRequired(true);
+        CommandLineParser parser = new DefaultParser();
+        CommandLine cmd = parser.parse( options, args);
+        if (cmd.hasOption('i')) {
+            infile = new File(cmd.getOptionValue('i'));
+            if (!infile.exists()) {
+                System.err.println(String.format("File %s does not exist.", cmd.getOptionValue('i')));
+                infile = null;
             }
         }
-
+        if (infile != null) {
+            // check for the output file:
+            if (cmd.hasOption('o')) {
+                outfile = new File(cmd.getOptionValue('o'));
+            } else {
+                outfile = new File(cmd.getOptionValue('i').replace(".csv", ".xml"));
+            }
+            // check if the output file exists
+            if (outfile.exists()) {
+                infile = null;  // go to error state.
+                System.err.println(String.format("File %s already exists and will not be overwritten.", cmd.getOptionValue('o')));
+            }
+        }
         // check if valid. If so go on, otherwise print help:
         if (infile != null) {
-            EncodeAndHashCSV e = new EncodeAndHashCSV(infile);
+            EncodeAndHashCSV e = new EncodeAndHashCSV(infile, outfile);
             e.run();
         } else {
-            printHelp();
+            HelpFormatter formatter = new HelpFormatter();
+            formatter.printHelp("EncodeAndHashCSV", options);
         }
-    }
-
-    private static void printHelp() {
-        System.out.println("This help text is shown if you start the EncodeAndHashCSV with the '-h' option.\n" +
-                "\n" +
-                "$> EncodeAndHashCSV -i <infile> -o <outfile>\n" +
-                "\n" +
-                "An existing <infile> is mandatory. ");
     }
 
     @Override
@@ -92,14 +108,14 @@ public class EncodeAndHashCSV implements Runnable {
                 addClassesString(feature, classes, doc);
 
                 line_count++;
-                if (line_count%100 == 0) System.out.println(line_count);
+                if (line_count%2000 == 0) {
+                    System.out.println(String.format("# %d images encoded and hashed", line_count));
+                }
             }
             // write the result
-            FileWriter out = new FileWriter("foo.xml");
+            FileWriter out = new FileWriter(outfile);
             document.write(out);
             out.close();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -117,8 +133,8 @@ public class EncodeAndHashCSV implements Runnable {
         for (Iterator<String> iterator = hm.keySet().iterator(); iterator.hasNext() && i< TOP_N_CLASSES; i++) {
             String cl = iterator.next();
             // decide how often the class is int he field per weight, here it's just the rounded weight.
-            float we = Math.round(hm.get(cl));
-            for (int j  = 0 ; j< we; j++) {
+            float we = (float) (Math.round(hm.get(cl)) * TOP_CLASSES_FACTOR);
+            for (int j  = 0 ; j < we; j++) {
                 field_text.append(cl);
                 field_text.append(' ');
             }
