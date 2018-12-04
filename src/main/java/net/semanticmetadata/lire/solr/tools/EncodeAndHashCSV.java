@@ -18,7 +18,7 @@ import java.util.*;
 public class EncodeAndHashCSV implements Runnable {
     private static int TOP_N_CLASSES = 32;
     private static double MAXIMUM_FEATURE_VALUE = 64d;
-    private static double TOP_CLASSES_FACTOR = 1d;
+    private static double TOP_CLASSES_FACTOR = 3d;
     File infile, outfile;
 
     public EncodeAndHashCSV(File infile, File outfile) {

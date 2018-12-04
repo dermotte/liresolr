@@ -8,12 +8,11 @@
 
     <!-- Latest compiled and minified CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
-    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
 
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
-          crossorigin="anonymous">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
 
     <script type="text/javascript" src="gridify.js"></script>
 
@@ -37,7 +36,7 @@
                 myUrl = docs[i].imgurl.toString();
                 last.append('<div class="imageDiv text-center">' +
                     '<a href="' + myID + '">' +
-                    '<img class="img-responsive" src="' + myUrl + '"  data-toggle="tooltip" data-placement="top" title="' + docs[i].title.toString() + ' ' + (docs[i].categories_ws != null ? docs[i].categories_ws.toString() : '') + '"></a>' +
+                    '<img class="img-responsive" src="' + myUrl + '"  data-toggle="tooltip" data-placement="top" title="' + docs[i].title.toString() + ' ' + (docs[i].classes_ws != null ? docs[i].classes_ws.toString().substr(0, 32)+' ...' : '') + '"></a>' +
                     // '<div class="well" style="margin-top: 6px">' +
                     '<a href="javascript:search(\'' + myID + '\', \'select\', 1, \'' + myUrl + '\')" class="btn btn-default btn-xs" style="position: relative; top: -3em; opacity: 0.5;"><i class="fa fa-search fa-2x"></i></a> ' +
                     // '</div>' +
@@ -59,7 +58,7 @@
          *
          * @param query the docID or URL
          * @param feature the feature class
-         * @param type types are 1:docID, 2:URL, 3:text
+         * @param type types are 1:docID, 2:URL, 3:text, 4:directly from the URL field
          */
         function search(query, feature, type, additionalUrl) {
             $(".imageDiv").remove();
@@ -74,20 +73,22 @@
             var reqUrl = serverUrlPrefix;
             var searchType = $("#searchTypeSelect").val();
 
-            if (searchType == "lireq" || type==3) { // if we go for the LireRequestHandler
+            if (searchType == "lireq" || type==3 || type==4) { // if we go for the LireRequestHandler
                 if (type == 1) {
                     reqUrl += "lireq?ms=false&fl=*&field=" + feature + "&id=" + query;
                 } else if (type == 2) {
                     reqUrl += "lireq?ms=false&fl=*&field=" + feature + "&url=" + query;
                 } else if (type == 3) {
-                    reqUrl += "select?wt=json&df=categories_ws&q=" + query;
+                    reqUrl += "select?wt=json&df=classes_ws&q=" + query;
                 }
                 reqUrl += "&rows=" + $("#numResults").val(); // number of results
                 if (type != 3) {
                     reqUrl += "&accuracy=" + $("#accuracyInput").val();
                     reqUrl += "&candidates=" + $("#numCandidatesInput").val();
                 }
+                if (type==4) reqUrl = $("#reqUrl").val();
                 console.log(reqUrl);
+                $("#reqUrl").val(reqUrl);
                 $.getJSON(reqUrl, function (myResult) {
                     $("#perf").html("Index search time: " + myResult.responseHeader.QTime + " ms");
                     $("#results").show();
@@ -95,16 +96,22 @@
                     console.log(myResult);
                     if (myResult.docs != null)
                         printResults(myResult.docs);
-                    else
+                    else if (myResult.moreLikeThis != null)
+                        for (key in myResult.moreLikeThis)
+                            printResults(myResult.moreLikeThis[key].docs);
+                    else if (myResult.response.docs != null)
                         printResults(myResult.response.docs);
+                    else
+                        printResults(myResult.response);
                 });
             } else if (searchType == "mlt") { // if we go more like this ...
-                reqUrl += "select?wt=json&mlt=true&mlt.fl=categories_ws&q=id:\"" + query + "\"";
+                reqUrl += "select?wt=json&mlt=true&mlt.fl=classes_ws&q=id:\"" + query + "\"";
                 reqUrl += "&mlt.count=" + $("#numResults").val(); // number of results
                 console.log(reqUrl);
+                $("#reqUrl").val(reqUrl);
                 $.getJSON(reqUrl, null, function (myResult) {
                     // does not enter the callback function ...
-                    console.log(myResult.moreLikeThis);
+                    // console.log(myResult.moreLikeThis);
                     for (i in myResult.moreLikeThis) {
                         console.log(myResult.moreLikeThis[i]);
                         printResults(myResult.moreLikeThis[i].docs);
@@ -121,6 +128,7 @@
                     var newReqUrl = serverUrlPrefix + "select?wt=json&q=*:*&sort=lirefunc(" + feature + ",%22" + myResult.histogram + "%22)%20asc";
                     newReqUrl += "&rows=" + $("#numResults").val();
                     console.log(newReqUrl);
+                    $("#reqUrl").val(reqUrl);
                     $.getJSON(newReqUrl, function (myResult) {
                         console.log(myResult);
                         printResults(myResult.response.docs);
@@ -136,6 +144,7 @@
                     var newReqUrl = serverUrlPrefix + "select?wt=json&q=" + feature + "_ha:(" + myResult.bs_query + ")*&sort=lirefunc(" + feature + ",%22" + myResult.histogram + "%22)%20asc";
                     newReqUrl += "&rows=" + $("#numResults").val();
                     console.log(newReqUrl);
+                    $("#reqUrl").val(reqUrl);
                     $.getJSON(newReqUrl, function (myResult) {
                         console.log(myResult);
                         printResults(myResult.response.docs);
@@ -156,6 +165,14 @@
                 }
             });
 
+            $("#reqUrl").keypress(function (event) {
+                if (event.which == 10 || event.which == 13) {
+                    console.log("URL query: " + $("#reqUrl").val());
+                    search($("#reqUrl").val(), $("#searchUrlQueryFeature").val(), 4, $("#searchUrlQuery").val());
+
+                }
+            });
+
             $("#searchTextQuery").keypress(function (event) {
                 if (event.which == 10 || event.which == 13) {
                     console.log("Text query: " + $("#searchTextQuery").val());
@@ -166,7 +183,9 @@
 
 
             // get JSON-formatted data from the server
-            $.getJSON(serverUrlPrefix + "lireq?rows=" + $("#numResults").val(), function (myResult) {
+            reqUrl = serverUrlPrefix + "lireq?rows=" + $("#numResults").val();
+            $("#reqUrl").val(reqUrl);
+            $.getJSON(reqUrl, function (myResult) {
                 $("#perf").html("Index search time: " + myResult.responseHeader.QTime + " ms");
                 console.log(myResult);
                 printResults(myResult.response);
@@ -190,7 +209,7 @@
             </p>
             <p>
                 <a href="http://www.lire-project.org"><i class="fa fa-link fa-2x" aria-hidden="true"></i></a>
-                <a href="https://github.com/dermotte/liresolr"><i class="fa fa-github fa-2x" aria-hidden="true"></i></a>
+                <a href="https://github.com/dermotte/liresolr"><i class="fab fa-github fa-2x"></i></i></a>
             </p>
         </div>
     </div>
@@ -237,11 +256,11 @@
                                         <label for="searchUrlQueryFeature" class="control-label">Search feature</label>
                                         <select id="searchUrlQueryFeature" class="form-control input-sm">
                                             <option value="ph">PHOG</option>
-                                            <option value="ce">CEDD</option>
+                                            <!--option value="ce">CEDD</option-->
                                             <option value="cl">ColorLayout</option>
                                             <option value="sc">ScalableColor</option>
                                             <option value="jc">JCD</option>
-                                            <option value="oh">OpponentHistogram</option>
+                                            <!--option value="oh">OpponentHistogram</option-->
                                             <option value="sf">Deep Features</option>
                                             <!--option>Boosted query</option-->
                                         </select>
@@ -278,8 +297,7 @@
                                 <div class="row">
                                     <div class="form-group col-md-12">
                                         <label for="searchTextQuery" class="control-label">Search query</label>
-                                        <input type="text" id="searchTextQuery" class="form-control input-sm"
-                                               placeholder="title:*">
+                                        <input type="text" id="searchTextQuery" class="form-control input-sm" placeholder="title:*">
                                     </div>
                                 </div>
                             </div>
@@ -291,7 +309,7 @@
     <div class="row">
         <div class="col-md-12">
             <label for="searchTextQuery" class="control-label">Request URI</label>
-            <input type="text" id="reqUrl" class="form-control input-sm" placeholder="select?..." disabled>
+            <input type="text" id="reqUrl" class="form-control input-sm" placeholder="select?...">
         </div>
     </div>
     </div>

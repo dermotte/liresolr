@@ -219,7 +219,7 @@ public class IndexingFromTextFile extends AbstractDocumentWriter {
         protected void thresholdReached() throws IOException {
             // flush and close current, roll over to new one.
             currentOutputStream.flush();
-            IOUtils.closeQuietly(currentOutputStream);
+            currentOutputStream.close();
             currentOutputStream = new FileOutputStream(basename + String.format("%03d", ++count) + extension, false);
         }
     }
