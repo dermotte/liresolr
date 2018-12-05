@@ -1,5 +1,15 @@
 # LireSolr Change Log
 
+**2017-12-05**
+* Extraction with lireq from double histograms to short features
+* Documentation updates
+* changed default to ms=false
+
+**2017-12-04**
+* lire.html updates to current bootstrap and jquery versions
+* search.html for debugging (raw input of query URL)
+* ImportFromCSV, Apache CLI integrated & XmlMerge generified.
+
 **2017-12-01**
 * Performance tests on lirefunc + RandomAccessBinaryDocValues
 * Updated documentation on the LRUCache

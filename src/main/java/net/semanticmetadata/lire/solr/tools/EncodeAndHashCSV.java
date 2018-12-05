@@ -16,9 +16,9 @@ import java.util.*;
  * it to an XML file Solr can handle. We assume that the rest of the columns is a feature vector, i.e. from a CNN.
  */
 public class EncodeAndHashCSV implements Runnable {
-    private static int TOP_N_CLASSES = 32;
-    private static double MAXIMUM_FEATURE_VALUE = 64d;
-    private static double TOP_CLASSES_FACTOR = 3d;
+    public static final int TOP_N_CLASSES = 32;
+    public static final double MAXIMUM_FEATURE_VALUE = 64d;
+    public static final double TOP_CLASSES_FACTOR = 3d;
     File infile, outfile;
 
     public EncodeAndHashCSV(File infile, File outfile) {

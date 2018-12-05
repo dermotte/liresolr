@@ -53,6 +53,8 @@ import java.util.TreeSet;
 
 import javax.imageio.ImageIO;
 
+import net.semanticmetadata.lire.imageanalysis.features.global.GenericGlobalShortFeature;
+import net.semanticmetadata.lire.solr.tools.EncodeAndHashCSV;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -121,8 +123,8 @@ public class LireRequestHandler extends RequestHandlerBase {
     /**
      * If metric spaces should be used instead of BitSampling.
      */
-    private boolean useMetricSpaces = true;
-    private static final boolean DEFAULT_USE_METRIC_SPACES = true;
+    private boolean useMetricSpaces = false;
+    private static final boolean DEFAULT_USE_METRIC_SPACES = false;
 
     static {
         HashingMetricSpacesManager.init(); // load reference points from disk.
@@ -149,7 +151,7 @@ public class LireRequestHandler extends RequestHandlerBase {
     @Override
     public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
         // (1) check if the necessary parameters are here
-        if (req.getParams().get("hashes") != null) { // we are searching for hashes ...
+        if (req.getParams().get("hashes") != null) { // we are searching for hashes ... without hashes one should go for the lirefunc version.
             handleHashSearch(req, rsp); // not really supported, just here for legacy.
         } else if (req.getParams().get("url") != null) { // we are searching for an image based on an URL
             handleUrlSearch(req, rsp);
@@ -383,17 +385,30 @@ public class LireRequestHandler extends RequestHandlerBase {
         GlobalFeature feat;
         // wrapping the whole part in the try
         try {
-            BufferedImage img = ImageIO.read(new URL(paramUrl).openStream());
-            img = ImageUtils.trimWhiteSpace(img);
-            // getting the right feature per field:
-            if (FeatureRegistry.getClassForHashField(paramField) == null) {
-                feat = new ColorLayout();
+            if (!paramField.startsWith("sf")) {
+                BufferedImage img = ImageIO.read(new URL(paramUrl).openStream());
+                img = ImageUtils.trimWhiteSpace(img);
+                // getting the right feature per field:
+                if (FeatureRegistry.getClassForHashField(paramField) == null) {
+                    feat = new ColorLayout();
+                } else {
+                    feat = (GlobalFeature) FeatureRegistry.getClassForHashField(paramField).newInstance();
+                }
+                feat.extract(img);
             } else {
-                feat = (GlobalFeature) FeatureRegistry.getClassForHashField(paramField).newInstance();
+                // we assume that this is a generic short feature, like it is used in context of deep features.
+                feat = new GenericGlobalShortFeature();
+                String[] featureDoublesAsStrings = paramUrl.split(",");
+                short[] featureShort = new short[featureDoublesAsStrings.length];
+                for (int i = 0; i < featureShort.length; i++) {
+                    double d = Double.parseDouble(featureDoublesAsStrings[i]);
+                    d = (d / EncodeAndHashCSV.MAXIMUM_FEATURE_VALUE) * Short.MAX_VALUE;
+                    featureShort[i] = (short) d;
+                }
+                ((GenericGlobalShortFeature) feat).setData(featureShort);
             }
-            feat.extract(img);
             rsp.add("histogram", Base64.encodeBase64String(feat.getByteArrayRepresentation()));
-            if (!useMetricSpaces || true) { // only if the field is available was the original way
+            if (!useMetricSpaces || true) { // select the most distinguishing hashes and deliver them back.
                 HashTermStatistics.addToStatistics(req.getSearcher(), paramField);
                 int[] hashes = BitSampling.generateHashes(feat.getFeatureVector());
                 List<String> hashStrings = orderHashes(hashes, paramField, false);

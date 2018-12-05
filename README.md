@@ -26,7 +26,7 @@ Preliminaries
 Supported values for feature field parameters, e.g. `lireq?field=cl` are ...
 
 -  **ph** .. PHOG (pyramid histogram of oriented gradients)
--  **oh** .. OpponentHistogram (simple color histtogram in the opponent color space)
+-  **oh** .. OpponentHistogram (simple color his    togram in the opponent color space)
 -  **cl** .. ColorLayout (from MPEG-7)
 -  **sc** .. ScalableColor (from MPEG-7)
 -  **eh** .. EdgeHistogram (from MPEG-7)
@@ -36,6 +36,7 @@ Supported values for feature field parameters, e.g. `lireq?field=cl` are ...
 -  **ac** .. AutoColorCorrelogram (color to color correlation histogram)
 -  **pc** .. SPCEDD (pyramid histogram of CEDD)
 -  **fo** .. FuzzyOpponentHistogram (fuzzy color histogram)
+-  **sf** .. GenericGlobalShortFeature (generic feature used to search for deep features in LireSolr)
 
 Also consult the Lire project and the documentation of features there. You can also extend the list of features by changing the `FeatureRegistry` in the LireSolr source.
 
@@ -61,7 +62,7 @@ Parameters:
 -   **id** .. the ID of the image used as a query as stored in the "id" field in the index.
 -   **field** .. gives the feature field to search for (optional, default=cl_ha, values see above)
 -   **rows** .. indicates how many results should be returned (optional, default=60).
--   **ms** .. prefer MetricSpaces over BitSampling (optional, default=true).
+-   **ms** .. prefer MetricSpaces over BitSampling (optional, default=false).
 -   **accuracy** .. double in [0.05, 1] indicates how many accurate the results should be (optional, default=0.33, less is less accurate, but faster).
 -   **candidates** .. int in [100, 100000] indicates how many accurate the results should be (optional, default=10000, less is less accurate, but faster).
 
@@ -74,7 +75,7 @@ Parameters:
 -   **url** .. the URL of the image used as a query. Note that the image has to be accessible by the web server Java has to be able to read it.
 -   **field** .. gives the feature field to search for (optional, default=cl_ha, values see above)
 -   **rows** .. indicates how many results should be returned (optional, default=60).
--   **ms** .. prefer MetricSpaces over BitSampling (optional, default=true).
+-   **ms** .. prefer MetricSpaces over BitSampling (optional, default=false).
 -   **accuracy** .. double in [0.05, 1] indicates how many accurate the results should be (optional, default=0.33, less is less accurate, but faster).
 -   **candidates** .. int in [100, 100000] indicates how many accurate the results should be (optional, default=10000, less is less accurate, but faster).
 
@@ -88,19 +89,71 @@ Parameters:
 -   **feature** .. Base64 encoded feature histogram from LireFeature#getByteArrayRepresentation().
 -   **field** .. gives the feature field to search for (optional, default=cl_ha, values see above)
 -   **rows** .. indicates how many results should be returned (optional, default=60).
--   **ms** .. prefer MetricSpaces over BitSampling (optional, default=true).
+-   **ms** .. prefer MetricSpaces over BitSampling (optional, default=false).
 -   **accuracy** .. double in [0.05, 1] indicates how many accurate the results should be (optional, default=0.33, less is less accurate, but faster).
 -   **candidates** .. int in [100, 100000] indicates how many accurate the results should be (optional, default=10000, less is less accurate, but faster).
+
+#### Examples: 
+    /lireq?feature=FQY5Cw8PDRQQEBEUEg4MDREQEA0OEREgEBAQEBAgEBAQEBA=&hashes=df0%20d5e%20726%205cf%204c6%20d58%2025b%2050b%202%20d%2041f%2022c%20985%208aa%20a42%2014f%20571%20b67%2077d%2025d%20210%205cb...&field=cl
 
 Extracting histograms
 ---------------------
 Extracts the histogram and the hashes of an image for use with the Lire sorting function. It will give you hashes and a truncated query for BitSampling (`bs_list` and `bs_query`) and MetricSpaces (`ms_list` and `ms_query`), but the latter only if it's available. the return values for `bs_list` and `ms_list` are ordered by ascending document frequency (BitSampling) and distance from the image to the respective reference point. 
 
+This can also be used to convert generic feature like the ones used for deep features, into base64 encoded feature strings and to obtain the appropriate queries for hashing based queries. If the field is sf_ha (or just sf), it is assumed that the extract parameter contains a comma separated list of doubles to be converted in a GenericGlobalShortFeatureVector.
+
+
 Parameters:
 
 -   **extract** .. the URL of the image. Note that the image has to be accessible by the web server Java has to be able to read it.
--   **field** .. gives the feature field to search for (optional, default=cl_ha, values see above)
--   **accuracy** .. double in [0.05, 1] indicates how many query terms should be in the queries.
+-   **field** .. gives the feature field to search for (optional, default=cl_ha, values see above, works also without the `_ha` suffix.)
+-   **accuracy** .. double in [0.05, 1] indicates how many query terms should be in the queries (optional, default=0.33).
+
+#### Examples: 
+Extraction from an image file:
+
+    lireq?extract=http://url.to/image.png&field=eh
+   
+results in 
+
+    {
+      "responseHeader":{
+        "status":0,
+        "QTime":141,
+        "params":{
+          "q":"*:*",
+          "extract":"http://localhost:8983/solr/test/US76287460.png",
+          "field":"eh",
+          "_":"1544015258504"}},
+      "histogram":"s7PQsraSkuCAkbG0xMPkk7PAgICww6K01YKRkICAosTSxMeFtOGjpQ==",
+      "bs_list":["957","a26", "4a2", "276", ... ],
+      "bs_query":"957 a26 4a2 276 e19 bf0 8b9 b2 ...",
+      "ms_list":["R001902", "R001640", "R000511", ...],
+      "ms_query":"R001902^1.00 R001640^0.88 ..."
+      }
+
+Extraction from a double histogram:
+
+    lireq?extract=0,0,0,1,1,1,1&field=sf
+
+results in 
+
+    {
+      "responseHeader": {
+        "status": 0,
+        "QTime": 2,
+        "params": {
+          "q": "*:*",
+          "extract": "0,0,0,1,1,1,1",
+          "field": "sf",
+          "_": "1544015258504"
+        }
+      },
+      "histogram": "AAAAAAAAAf8B\/wH\/Af8=",
+      "bs_list": ["cd2", "2a5", "612", "d8", "510", "3e1", "d95", ...
+      ],
+      "bs_query": "cd2 2a5 612 d8 510 ..."
+    }
 
 
 Function queries with lirefunc
