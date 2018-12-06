@@ -146,6 +146,14 @@ task runParallelIndexer(type: JavaExec) {
 
     // arguments to pass to the application
     args('-i images-wipo.lst -f -o images-wipo.xml -n 4'.split(' '))
+    /*
+     use the XML file like this:
+        curl http://localhost:8983/solr/lire/update  -H "Content-Type: text/xml" --data-binary @file.xml
+     and maybe then
+        curl http://localhost:8983/solr/lire/update?commit=true
+      */
+    //
+
 }
 
 task runImportFromCSV(type: JavaExec) {

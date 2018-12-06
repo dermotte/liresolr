@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.Map.Entry;
 
+
 public class Utilities {
     public static String hashesArrayToString(int[] array) {
         StringBuilder sb = new StringBuilder(array.length * 8);
@@ -31,6 +32,37 @@ public class Utilities {
             result.put(entry.getKey(), entry.getValue());
         }
 
+        return result;
+    }
+
+    /**
+     * Does a max normalization of the input vector.
+     * @param featureVector the input double values, is left untouched.
+     * @return new object with normalized values.
+     */
+    public static double[] normalize(double[] featureVector) {
+        double[] result = new double[featureVector.length];
+        double max = Arrays.stream(featureVector).reduce(Double::max).getAsDouble();
+        double min = Arrays.stream(featureVector).reduce(Double::min).getAsDouble();
+        for (int i = 0; i < featureVector.length; i++) {
+            result[i] = (featureVector[i] - min)/ (max-min);
+
+        }
+        return result;
+    }
+
+    /**
+     * Quantizes a normalized input vector to the maximum range of short.
+     * @param featureVector the normalized input.
+     * @return the short[] result, ideally quantized over the whole number space of short.
+     */
+    public static short[] quantizeToShort(double[] featureVector) {
+        short[] result = new short[featureVector.length];
+        for (int i = 0; i < featureVector.length; i++) {
+            double d = featureVector[i] * Short.MAX_VALUE * 2 + Short.MIN_VALUE;
+            assert (d <= Short.MAX_VALUE && d >= Short.MIN_VALUE);
+            result[i] = (short) (d);
+        }
         return result;
     }
 }

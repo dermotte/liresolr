@@ -1,5 +1,8 @@
 # LireSolr Change Log
 
+**2017-12-06**
+* Switched to max norm for importing generic double features.
+
 **2017-12-05**
 * Extraction with lireq from double histograms to short features
 * Documentation updates

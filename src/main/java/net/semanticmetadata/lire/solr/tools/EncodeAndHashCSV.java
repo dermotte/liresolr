@@ -9,7 +9,10 @@ import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
 
 import java.io.*;
-import java.util.*;
+import java.util.Base64;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Command line utility that takes a csv file with the file name in the first col and converts
@@ -17,8 +20,8 @@ import java.util.*;
  */
 public class EncodeAndHashCSV implements Runnable {
     public static final int TOP_N_CLASSES = 32;
-    public static final double MAXIMUM_FEATURE_VALUE = 64d;
-    public static final double TOP_CLASSES_FACTOR = 3d;
+    public static final int TOP_N_CLASSES_FOR_QUERY = 5;
+    public static final double TOP_CLASSES_FACTOR = 10d;
     File infile, outfile;
 
     public EncodeAndHashCSV(File infile, File outfile) {
@@ -38,7 +41,7 @@ public class EncodeAndHashCSV implements Runnable {
         options.addOption("m", "maximum-value", true, "The maximum feature value used for normalization");
         options.getOption("i").setRequired(true);
         CommandLineParser parser = new DefaultParser();
-        CommandLine cmd = parser.parse( options, args);
+        CommandLine cmd = parser.parse(options, args);
         if (cmd.hasOption('i')) {
             infile = new File(cmd.getOptionValue('i'));
             if (!infile.exists()) {
@@ -80,10 +83,10 @@ public class EncodeAndHashCSV implements Runnable {
             // we assume that the first line is the name of the classes and the first col is the file name:
             String line = br.readLine();
             String[] tmp_array = line.split(",");
-            classes = new String[tmp_array.length-1];
+            classes = new String[tmp_array.length - 1];
             System.arraycopy(tmp_array, 1, classes, 0, classes.length);
             int line_count = 0;
-            while ((line = br.readLine())!=null) {
+            while ((line = br.readLine()) != null) {
                 tmp_array = line.split(",");
                 Element doc = root.addElement("doc");
 
@@ -98,7 +101,7 @@ public class EncodeAndHashCSV implements Runnable {
                 // converting the data to double:
                 double[] feature = new double[classes.length];
                 for (int i = 0; i < feature.length; i++) {
-                    feature[i] = Double.parseDouble(tmp_array[i+1]);
+                    feature[i] = Double.parseDouble(tmp_array[i + 1]);
                 }
 
                 // now create the feature vector ...
@@ -108,7 +111,7 @@ public class EncodeAndHashCSV implements Runnable {
                 addClassesString(feature, classes, doc);
 
                 line_count++;
-                if (line_count%2000 == 0) {
+                if (line_count % 2000 == 0) {
                     System.out.println(String.format("# %d images encoded and hashed", line_count));
                 }
             }
@@ -121,39 +124,52 @@ public class EncodeAndHashCSV implements Runnable {
         }
     }
 
+    /**
+     * Creates a string of classes based on the dimensions names (in the first row) and
+     * puts in the class names n times depending on their weight and the TOP_CLASSES_FACTOR
+     * value. Additionally it creates a text field, where a proposed query is given.
+     * @param feature
+     * @param classes
+     * @param doc
+     */
     private void addClassesString(double[] feature, String[] classes, Element doc) {
         // sort the feature vector and get the 32 most important classes out
         Map<String, Double> hm = new LinkedHashMap<>();
-        StringBuilder field_text = new StringBuilder(1024);
+        StringBuilder field_classes_ws_text = new StringBuilder(1024);
+        StringBuilder field_query_s_text = new StringBuilder(1024);
         for (int i = 0; i < feature.length; i++) {
             hm.put(classes[i], feature[i]);
         }
         hm = Utilities.sortByValue(hm);
         int i = 0;
-        for (Iterator<String> iterator = hm.keySet().iterator(); iterator.hasNext() && i< TOP_N_CLASSES; i++) {
+        for (Iterator<String> iterator = hm.keySet().iterator(); iterator.hasNext() && i < TOP_N_CLASSES; i++) {
             String cl = iterator.next();
             // decide how often the class is int he field per weight, here it's just the rounded weight.
-            float we = (float) (Math.round(hm.get(cl)) * TOP_CLASSES_FACTOR);
-            for (int j  = 0 ; j < we; j++) {
-                field_text.append(cl);
-                field_text.append(' ');
+            double we = Math.max((Math.round(hm.get(cl)) * TOP_CLASSES_FACTOR), 0);
+            for (int j = 0; j < we; j++) {
+                field_classes_ws_text.append(cl);
+                field_classes_ws_text.append(' ');
             }
         }
-        Element field_file = doc.addElement("field");
-        field_file.addAttribute("name", "classes_ws");
-        field_file.addText(field_text.toString().trim());
+        i = 0;
+        for (Iterator<String> iterator = hm.keySet().iterator(); iterator.hasNext() && i < TOP_N_CLASSES_FOR_QUERY; i++) {
+            String cl = iterator.next();
+            field_query_s_text.append(cl);
+            field_query_s_text.append(' ');
+        }
+        Element field_classes_ws = doc.addElement("field");
+        field_classes_ws.addAttribute("name", "classes_ws");
+        field_classes_ws.addText(field_classes_ws_text.toString().trim());
+
+        Element field_query_s = doc.addElement("field");
+        field_query_s.addAttribute("name", "query_s");
+        field_query_s.addText(field_query_s_text.toString().trim());
     }
 
     private void addFeatureVector(double[] feature, String[] classes, Element doc) {
         GenericGlobalShortFeature f = new GenericGlobalShortFeature();
-        short[] v = new short[feature.length];
-        for (int i = 0; i < v.length; i++) {
-            // double v1 = ((feature[i] / 64d) * Short.MAX_VALUE * 2) + Short.MIN_VALUE;
-            double v1 = (feature[i] / MAXIMUM_FEATURE_VALUE) * Short.MAX_VALUE;
-            assert(v1 <= Short.MAX_VALUE && v1 >= Short.MIN_VALUE);
-            v[i] = (short) v1;
-        }
-        f.setData(v);
+        feature = Utilities.normalize(feature);
+        f.setData(Utilities.quantizeToShort(feature));
         int[] hashes = BitSampling.generateHashes(f.getFeatureVector());
 
         Element field_file = doc.addElement("field");

@@ -55,6 +55,7 @@ import javax.imageio.ImageIO;
 
 import net.semanticmetadata.lire.imageanalysis.features.global.GenericGlobalShortFeature;
 import net.semanticmetadata.lire.solr.tools.EncodeAndHashCSV;
+import net.semanticmetadata.lire.solr.tools.Utilities;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -242,6 +243,7 @@ public class LireRequestHandler extends RequestHandlerBase {
     /**
      * Parses the fq param and adds it as a list of filter queries or reverts to null if nothing is found
      * or an Exception is thrown.
+     *
      * @param req
      * @return either a query from the QueryParser or null
      */
@@ -399,12 +401,13 @@ public class LireRequestHandler extends RequestHandlerBase {
                 // we assume that this is a generic short feature, like it is used in context of deep features.
                 feat = new GenericGlobalShortFeature();
                 String[] featureDoublesAsStrings = paramUrl.split(",");
+                double[] featureDoubles = new double[featureDoublesAsStrings.length];
                 short[] featureShort = new short[featureDoublesAsStrings.length];
-                for (int i = 0; i < featureShort.length; i++) {
-                    double d = Double.parseDouble(featureDoublesAsStrings[i]);
-                    d = (d / EncodeAndHashCSV.MAXIMUM_FEATURE_VALUE) * Short.MAX_VALUE;
-                    featureShort[i] = (short) d;
+                for (int i = 0; i < featureDoubles.length; i++) {
+                    featureDoubles[i] = Double.parseDouble(featureDoublesAsStrings[i]);
                 }
+                featureDoubles = Utilities.normalize(featureDoubles); // max norm
+                featureShort = Utilities.quantizeToShort(featureDoubles); // quantize
                 ((GenericGlobalShortFeature) feat).setData(featureShort);
             }
             rsp.add("histogram", Base64.encodeBase64String(feat.getByteArrayRepresentation()));
@@ -512,7 +515,7 @@ public class LireRequestHandler extends RequestHandlerBase {
      * @param searcher      the actual index searcher object to search the index
      * @param hashFieldName the name of the field the hashes can be found
      * @param maximumHits   the maximum number of hits, the smaller the faster
-     * @param filterQueries   can be null
+     * @param filterQueries can be null
      * @param query         the (Boolean) query for querying the candidates from the IndexSearcher
      * @param queryFeature  the image feature used for re-ranking the results
      * @throws IOException
@@ -711,8 +714,8 @@ public class LireRequestHandler extends RequestHandlerBase {
      * while deleting those that are not in the index at all. Meaning: terms sorted by docFreq ascending, removing
      * those with docFreq == 0
      *
-     * @param hashes     the int[] of hashes
-     * @param paramField the field in the index.
+     * @param hashes                 the int[] of hashes
+     * @param paramField             the field in the index.
      * @param removeZeroDocFreqTerms
      * @return
      */
