@@ -5,6 +5,8 @@ import net.semanticmetadata.lire.imageanalysis.features.GlobalFeature;
 import net.semanticmetadata.lire.imageanalysis.features.global.*;
 import net.semanticmetadata.lire.imageanalysis.features.global.joint.JointHistogram;
 import net.semanticmetadata.lire.imageanalysis.features.global.spatialpyramid.SPCEDD;
+import net.semanticmetadata.lire.solr.features.DoubleFeatureCosineDistance;
+import net.semanticmetadata.lire.solr.features.ShortFeatureCosineDistance;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -52,9 +54,11 @@ public class FeatureRegistry {
         codeToClass.put("sc", ScalableColor.class);
         codeToClass.put("pc", SPCEDD.class);
         // GenericFeatures filled with whatever one prefers.
-        codeToClass.put("df", GenericGlobalDoubleFeature.class);
+        codeToClass.put("df", DoubleFeatureCosineDistance.class);
+//        codeToClass.put("df", GenericGlobalDoubleFeature.class);
         codeToClass.put("if", GenericGlobalIntFeature.class);
-        codeToClass.put("sf", GenericGlobalShortFeature.class);
+        codeToClass.put("sf", ShortFeatureCosineDistance.class);
+//        codeToClass.put("sf", GenericGlobalShortFeature.class);
 
         // local feature based histograms.
         // codeToClass.put("sim_ce", GenericByteLireFeature.class); // SIMPLE CEDD ... just to give a hint how it might look like.

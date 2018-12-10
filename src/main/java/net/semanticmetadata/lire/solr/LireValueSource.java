@@ -99,9 +99,7 @@ public class LireValueSource extends ValueSource {
                 } else {
                     System.err.println("Feature " + field + " is not registered.");
                 }
-            } catch (InstantiationException e) {
-                e.printStackTrace();
-            } catch (IllegalAccessException e) {
+            } catch (InstantiationException | IllegalAccessException e) {
                 e.printStackTrace();
             }
         }
@@ -263,9 +261,6 @@ public class LireValueSource extends ValueSource {
                 }
 
                 @Override
-                /**
-                 * This method has to be implemented to support sorting!
-                 */
                 public double doubleVal(int doc) throws IOException {
                     BytesRef bytesRef = getBytesRef(binaryValues, doc);
                     if (bytesRef.length > 0) {
@@ -308,7 +303,7 @@ public class LireValueSource extends ValueSource {
         }
     }
 
-	// TODO: Check for a workaround to not introduce variables for runtime performance (or check if this is neccessary first).
+	// TODO: Check for a workaround to not introduce variables for runtime performance (or check if this is necessary first).
     private BytesRef getBytesRef(BinaryDocValues bdv, int docId)
             throws IOException {
         if (bdv != null && bdv.advance(docId) == docId) {

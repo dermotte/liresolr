@@ -3,16 +3,14 @@ package net.semanticmetadata.lire.solr.tools;
 import net.semanticmetadata.lire.imageanalysis.features.global.GenericGlobalShortFeature;
 import net.semanticmetadata.lire.indexers.hashing.BitSampling;
 import net.semanticmetadata.lire.solr.HashingMetricSpacesManager;
+import net.semanticmetadata.lire.solr.features.DoubleFeatureCosineDistance;
 import org.apache.commons.cli.*;
 import org.dom4j.Document;
 import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
 
 import java.io.*;
-import java.util.Base64;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Command line utility that takes a csv file with the file name in the first col and converts
@@ -167,18 +165,58 @@ public class EncodeAndHashCSV implements Runnable {
     }
 
     private void addFeatureVector(double[] feature, String[] classes, Element doc) {
-        GenericGlobalShortFeature f = new GenericGlobalShortFeature();
-        feature = Utilities.normalize(feature);
-        f.setData(Utilities.quantizeToShort(feature));
-        int[] hashes = BitSampling.generateHashes(f.getFeatureVector());
+        GenericGlobalShortFeature f1 = new GenericGlobalShortFeature();
+        DoubleFeatureCosineDistance f2 = new DoubleFeatureCosineDistance();
 
+        // double feature:
+        double[] tmpFeature = toCutOffArray(feature);
+        f2.setData(tmpFeature);
+        int[] hashes = BitSampling.generateHashes(f2.getFeatureVector());
         Element field_file = doc.addElement("field");
+        field_file.addAttribute("name", "df_hi");
+        field_file.addText(Base64.getEncoder().encodeToString(f2.getByteArrayRepresentation()));
+
+        field_file = doc.addElement("field");
+        field_file.addAttribute("name", "df_ha");
+        field_file.addText(Utilities.hashesArrayToString(hashes));
+
+        // short feature ...
+//        feature = Utilities.normalize(feature);
+//        f1.setData(Utilities.quantizeToShort(feature));
+        f1.setData(toShortArray(tmpFeature));
+        hashes = BitSampling.generateHashes(f1.getFeatureVector());
+
+        field_file = doc.addElement("field");
         field_file.addAttribute("name", "sf_hi");
-        field_file.addText(Base64.getEncoder().encodeToString(f.getByteArrayRepresentation()));
+        field_file.addText(Base64.getEncoder().encodeToString(f1.getByteArrayRepresentation()));
 
         field_file = doc.addElement("field");
         field_file.addAttribute("name", "sf_ha");
         field_file.addText(Utilities.hashesArrayToString(hashes));
+    }
+
+    /**
+     * Cuts off after the first numDimensions .. the rest is set to zero.
+     * @param feature
+     * @return
+     */
+    private double[] toCutOffArray(double[] feature) {
+        int numDimensions = 32;
+        double[] clone = feature.clone();
+        Arrays.sort(clone);
+        double cutOff = clone[numDimensions-1];
+        for (int i = 0; i < feature.length; i++) {
+            clone[i] = (feature[i]>cutOff)?feature[i]:0d;
+        }
+        return clone;
+    }
+
+    private short[] toShortArray(double[] feature) {
+        short[] arr = new short[feature.length];
+        for (int i = 0; i < arr.length; i++) {
+            arr[i] = (short) (feature[i]*100d);
+        }
+        return arr;
     }
 }
 /*

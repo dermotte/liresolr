@@ -214,21 +214,26 @@ public class LireRequestHandler extends RequestHandlerBase {
                         bvBytesRef.bytes, bvBytesRef.offset, bvBytesRef.length);
 
                 Query query = null;
-                if (!useMetricSpaces) {
-                    // check singleton cache if the term stats can be cached.
-                    HashTermStatistics.addToStatistics(searcher, paramField);
-                    // Re-generating the hashes to save space (instead of storing them in the index)
-                    int[] hashes = BitSampling.generateHashes(queryFeature.getFeatureVector());
-                    query = createQuery(hashes, paramField, numberOfQueryTerms);
-                } else if (MetricSpaces.supportsFeature(queryFeature)) {
-                    // ----< Metric Spaces >-----
-                    int queryLength = (int) StatsUtils.clamp(numberOfQueryTerms * MetricSpaces.getPostingListLength(queryFeature), 3, MetricSpaces.getPostingListLength(queryFeature));
-                    String msQuery = MetricSpaces.generateBoostedQuery(queryFeature, queryLength);
-                    QueryParser qp = new QueryParser(paramField.replace("_ha", "_ms"), new WhitespaceAnalyzer());
-                    query = qp.parse(msQuery);
-                } else {
+                if (numberOfQueryTerms >= 0.90) {
                     query = new MatchAllDocsQuery();
-                    rsp.add("Error", "Feature not supported by MetricSpaces: " + queryFeature.getClass().getSimpleName());
+                    rsp.add("Note", "Switching to AllDocumentsQuery because accuracy is set higher than 0.9.");
+                } else {
+                    if (!useMetricSpaces) {
+                        // check singleton cache if the term stats can be cached.
+                        HashTermStatistics.addToStatistics(searcher, paramField);
+                        // Re-generating the hashes to save space (instead of storing them in the index)
+                        int[] hashes = BitSampling.generateHashes(queryFeature.getFeatureVector());
+                        query = createQuery(hashes, paramField, numberOfQueryTerms);
+                    } else if (MetricSpaces.supportsFeature(queryFeature)) {
+                        // ----< Metric Spaces >-----
+                        int queryLength = (int) StatsUtils.clamp(numberOfQueryTerms * MetricSpaces.getPostingListLength(queryFeature), 3, MetricSpaces.getPostingListLength(queryFeature));
+                        String msQuery = MetricSpaces.generateBoostedQuery(queryFeature, queryLength);
+                        QueryParser qp = new QueryParser(paramField.replace("_ha", "_ms"), new WhitespaceAnalyzer());
+                        query = qp.parse(msQuery);
+                    } else {
+                        query = new MatchAllDocsQuery();
+                        rsp.add("Error", "Feature not supported by MetricSpaces: " + queryFeature.getClass().getSimpleName());
+                    }
                 }
                 doSearch(req, rsp, searcher, paramField, paramRows, getFilterQueries(req), query, queryFeature);
             } else {
