@@ -1,6 +1,6 @@
 # -- Building the docker image ...
 # Make sure you run 'gradle prepareForDockerImage' first.
-# $ docker build -t dermotte/liresolr:6.4.0 .
+# $ docker build -t dermotte/liresolr:7.5.0 .
 # $ docker tag <id> dermotte/liresolr:latest
 # $ docker login
 # $ docker push dermotte/liresolr:latest
