@@ -65,4 +65,27 @@ public class Utilities {
         }
         return result;
     }
+
+    /**
+     * Cuts off after the first numDimensions .. the rest is set to zero.
+     * @param feature
+     * @return
+     */
+    public static double[] toCutOffArray(double[] feature, int numDimensions) {
+        double[] clone = feature.clone();
+        Arrays.sort(clone);
+        double cutOff = clone[clone.length-numDimensions];
+        for (int i = 0; i < feature.length; i++) {
+            clone[i] = (feature[i]>cutOff)?feature[i]:0d;
+        }
+        return clone;
+    }
+
+    public static short[] toShortArray(double[] feature) {
+        short[] arr = new short[feature.length];
+        for (int i = 0; i < arr.length; i++) {
+            arr[i] = (short) (feature[i]*100d);
+        }
+        return arr;
+    }
 }

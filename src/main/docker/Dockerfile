@@ -27,7 +27,7 @@ COPY *.jar /opt/solr/server/solr-webapp/webapp/WEB-INF/lib/
 COPY lire.html /opt/solr/server/solr-webapp/webapp/
 COPY search.html /opt/solr/server/solr-webapp/webapp/
 COPY gridify.js /opt/solr/server/solr-webapp/webapp/
-# copy the images to the image ###
+# copy the images to the image folder ###
 # COPY img.tar /opt/solr/server/solr-webapp/webapp/
 # RUN tar -C /opt/solr/server/solr-webapp/webapp -xf /opt/solr/server/solr-webapp/webapp/img.tar && \
 #     rm /opt/solr/server/solr-webapp/webapp/img.tar

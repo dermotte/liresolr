@@ -54,6 +54,7 @@ import java.util.TreeSet;
 import javax.imageio.ImageIO;
 
 import net.semanticmetadata.lire.imageanalysis.features.global.GenericGlobalShortFeature;
+import net.semanticmetadata.lire.solr.features.ShortFeatureCosineDistance;
 import net.semanticmetadata.lire.solr.tools.EncodeAndHashCSV;
 import net.semanticmetadata.lire.solr.tools.Utilities;
 import org.apache.commons.codec.binary.Base64;
@@ -404,16 +405,15 @@ public class LireRequestHandler extends RequestHandlerBase {
                 feat.extract(img);
             } else {
                 // we assume that this is a generic short feature, like it is used in context of deep features.
-                feat = new GenericGlobalShortFeature();
+                feat = new ShortFeatureCosineDistance();
                 String[] featureDoublesAsStrings = paramUrl.split(",");
                 double[] featureDoubles = new double[featureDoublesAsStrings.length];
-                short[] featureShort = new short[featureDoublesAsStrings.length];
                 for (int i = 0; i < featureDoubles.length; i++) {
                     featureDoubles[i] = Double.parseDouble(featureDoublesAsStrings[i]);
                 }
-                featureDoubles = Utilities.normalize(featureDoubles); // max norm
-                featureShort = Utilities.quantizeToShort(featureDoubles); // quantize
-                ((GenericGlobalShortFeature) feat).setData(featureShort);
+                featureDoubles = Utilities.toCutOffArray(featureDoubles, EncodeAndHashCSV.TOP_N_CLASSES); // max norm
+                short[] featureShort = Utilities.toShortArray(featureDoubles); // quantize
+                ((ShortFeatureCosineDistance) feat).setData(featureShort);
             }
             rsp.add("histogram", Base64.encodeBase64String(feat.getByteArrayRepresentation()));
             if (!useMetricSpaces || true) { // select the most distinguishing hashes and deliver them back.

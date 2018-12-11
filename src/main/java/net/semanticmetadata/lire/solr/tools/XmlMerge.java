@@ -88,7 +88,7 @@ public class XmlMerge implements Runnable {
                 String id = doc.selectSingleNode("field[@name='id']").getText();
                 nodeCache.put(id, (Element) doc.detach());
             }
-            System.out.println("# " + nodeCache.size() + " nodes cached");
+            System.out.println("# " + nodeCache.size() + " nodes cached from " + fileA.getPath());
             System.out.println("# Merging data");
             docIterator = targetRoot.elementIterator("doc");
             while (docIterator.hasNext()) {

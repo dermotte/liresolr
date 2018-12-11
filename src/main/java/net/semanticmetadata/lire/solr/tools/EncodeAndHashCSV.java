@@ -1,9 +1,8 @@
 package net.semanticmetadata.lire.solr.tools;
 
-import net.semanticmetadata.lire.imageanalysis.features.global.GenericGlobalShortFeature;
 import net.semanticmetadata.lire.indexers.hashing.BitSampling;
 import net.semanticmetadata.lire.solr.HashingMetricSpacesManager;
-import net.semanticmetadata.lire.solr.features.DoubleFeatureCosineDistance;
+import net.semanticmetadata.lire.solr.features.ShortFeatureCosineDistance;
 import org.apache.commons.cli.*;
 import org.dom4j.Document;
 import org.dom4j.DocumentHelper;
@@ -135,6 +134,7 @@ public class EncodeAndHashCSV implements Runnable {
         Map<String, Double> hm = new LinkedHashMap<>();
         StringBuilder field_classes_ws_text = new StringBuilder(1024);
         StringBuilder field_query_s_text = new StringBuilder(1024);
+        StringBuilder field_query_boosted_text = new StringBuilder(1024);
         for (int i = 0; i < feature.length; i++) {
             hm.put(classes[i], feature[i]);
         }
@@ -152,8 +152,15 @@ public class EncodeAndHashCSV implements Runnable {
         i = 0;
         for (Iterator<String> iterator = hm.keySet().iterator(); iterator.hasNext() && i < TOP_N_CLASSES_FOR_QUERY; i++) {
             String cl = iterator.next();
+            field_query_s_text.append("classes_ws:");
             field_query_s_text.append(cl);
             field_query_s_text.append(' ');
+
+            field_query_boosted_text.append("classes_ws:");
+            field_query_boosted_text.append(cl);
+            field_query_boosted_text.append('^');
+            field_query_boosted_text.append((int) Math.round(hm.get(cl)));
+            field_query_boosted_text.append(' ');
         }
         Element field_classes_ws = doc.addElement("field");
         field_classes_ws.addAttribute("name", "classes_ws");
@@ -162,28 +169,35 @@ public class EncodeAndHashCSV implements Runnable {
         Element field_query_s = doc.addElement("field");
         field_query_s.addAttribute("name", "query_s");
         field_query_s.addText(field_query_s_text.toString().trim());
+
+        Element field_query_b = doc.addElement("field");
+        field_query_b.addAttribute("name", "query_boosted_s");
+        field_query_b.addText(field_query_boosted_text.toString().trim());
     }
 
     private void addFeatureVector(double[] feature, String[] classes, Element doc) {
-        GenericGlobalShortFeature f1 = new GenericGlobalShortFeature();
-        DoubleFeatureCosineDistance f2 = new DoubleFeatureCosineDistance();
+        Element field_file;
+        int[] hashes;
+        ShortFeatureCosineDistance f1 = new ShortFeatureCosineDistance();
+        // DoubleFeatureCosineDistance f2 = new DoubleFeatureCosineDistance();
+
+        double[] tmpFeature = Utilities.toCutOffArray(feature, TOP_N_CLASSES);
 
         // double feature:
-        double[] tmpFeature = toCutOffArray(feature);
-        f2.setData(tmpFeature);
-        int[] hashes = BitSampling.generateHashes(f2.getFeatureVector());
-        Element field_file = doc.addElement("field");
-        field_file.addAttribute("name", "df_hi");
-        field_file.addText(Base64.getEncoder().encodeToString(f2.getByteArrayRepresentation()));
+//        f2.setData(tmpFeature);
+//        int[] hashes = BitSampling.generateHashes(f2.getFeatureVector());
+//        Element field_file = doc.addElement("field");
+//        field_file.addAttribute("name", "df_hi");
+//        field_file.addText(Base64.getEncoder().encodeToString(f2.getByteArrayRepresentation()));
 
-        field_file = doc.addElement("field");
-        field_file.addAttribute("name", "df_ha");
-        field_file.addText(Utilities.hashesArrayToString(hashes));
+//        field_file = doc.addElement("field");
+//        field_file.addAttribute("name", "df_ha");
+//        field_file.addText(Utilities.hashesArrayToString(hashes));
 
         // short feature ...
 //        feature = Utilities.normalize(feature);
 //        f1.setData(Utilities.quantizeToShort(feature));
-        f1.setData(toShortArray(tmpFeature));
+        f1.setData(Utilities.toShortArray(tmpFeature));
         hashes = BitSampling.generateHashes(f1.getFeatureVector());
 
         field_file = doc.addElement("field");
@@ -195,29 +209,6 @@ public class EncodeAndHashCSV implements Runnable {
         field_file.addText(Utilities.hashesArrayToString(hashes));
     }
 
-    /**
-     * Cuts off after the first numDimensions .. the rest is set to zero.
-     * @param feature
-     * @return
-     */
-    private double[] toCutOffArray(double[] feature) {
-        int numDimensions = 32;
-        double[] clone = feature.clone();
-        Arrays.sort(clone);
-        double cutOff = clone[numDimensions-1];
-        for (int i = 0; i < feature.length; i++) {
-            clone[i] = (feature[i]>cutOff)?feature[i]:0d;
-        }
-        return clone;
-    }
-
-    private short[] toShortArray(double[] feature) {
-        short[] arr = new short[feature.length];
-        for (int i = 0; i < arr.length; i++) {
-            arr[i] = (short) (feature[i]*100d);
-        }
-        return arr;
-    }
 }
 /*
 This help text is shown if you start the EncodeAndHashCSV with the '-h' option.
