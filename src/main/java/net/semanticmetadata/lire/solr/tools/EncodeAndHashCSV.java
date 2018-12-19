@@ -19,6 +19,8 @@ public class EncodeAndHashCSV implements Runnable {
     public static final int TOP_N_CLASSES = 32;
     public static final int TOP_N_CLASSES_FOR_QUERY = 5;
     public static final double TOP_CLASSES_FACTOR = 10d;
+    public static final double THRESHOLD_RELATIVE_SIGNIFICANCE_TO_MAXIMUM = 0.8;
+
     File infile, outfile;
 
     public EncodeAndHashCSV(File infile, File outfile) {
@@ -125,6 +127,7 @@ public class EncodeAndHashCSV implements Runnable {
      * Creates a string of classes based on the dimensions names (in the first row) and
      * puts in the class names n times depending on their weight and the TOP_CLASSES_FACTOR
      * value. Additionally it creates a text field, where a proposed query is given.
+     *
      * @param feature
      * @param classes
      * @param doc
@@ -135,6 +138,7 @@ public class EncodeAndHashCSV implements Runnable {
         StringBuilder field_classes_ws_text = new StringBuilder(1024);
         StringBuilder field_query_s_text = new StringBuilder(1024);
         StringBuilder field_query_boosted_text = new StringBuilder(1024);
+        StringBuilder field_classes_significant_text = new StringBuilder(1024);
         for (int i = 0; i < feature.length; i++) {
             hm.put(classes[i], feature[i]);
         }
@@ -162,6 +166,21 @@ public class EncodeAndHashCSV implements Runnable {
             field_query_boosted_text.append((int) Math.round(hm.get(cl)));
             field_query_boosted_text.append(' ');
         }
+        // find the classes with a weight > t times the maximum weight with t being initially 0.8
+        i = 0; // init count to zero
+        String firstClass = hm.keySet().iterator().next(); // get the first class
+        double minimumWeight = hm.get(firstClass) * THRESHOLD_RELATIVE_SIGNIFICANCE_TO_MAXIMUM; // set the threshold
+        double currentWeight = minimumWeight; // first element is highes one, so set it right now.
+        Iterator<String> iterator = hm.keySet().iterator();
+        do {
+            String cl = iterator.next();
+            currentWeight = hm.get(cl);
+            if (currentWeight > minimumWeight) {
+                field_classes_significant_text.append(cl);
+                field_classes_significant_text.append(' ');
+                i++;
+            }
+        } while (iterator.hasNext() && currentWeight > minimumWeight); // do this while there are still elements and the weight is above the threshold.
         Element field_classes_ws = doc.addElement("field");
         field_classes_ws.addAttribute("name", "classes_ws");
         field_classes_ws.addText(field_classes_ws_text.toString().trim());
@@ -173,6 +192,10 @@ public class EncodeAndHashCSV implements Runnable {
         Element field_query_b = doc.addElement("field");
         field_query_b.addAttribute("name", "query_boosted_s");
         field_query_b.addText(field_query_boosted_text.toString().trim());
+
+        Element field_classes_significant_ws = doc.addElement("field");
+        field_classes_significant_ws.addAttribute("name", "classes_significant_ws");
+        field_classes_significant_ws.addText(field_classes_significant_text.toString().trim());
     }
 
     private void addFeatureVector(double[] feature, String[] classes, Element doc) {
