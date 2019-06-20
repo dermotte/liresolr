@@ -1,6 +1,6 @@
 package net.semanticmetadata.lire.solr;
 
-import org.apache.htrace.fasterxml.jackson.databind.util.ArrayIterator;
+import com.fasterxml.jackson.databind.util.ArrayIterator;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 
