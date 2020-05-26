@@ -7,7 +7,7 @@ apply plugin: 'project-report'
 sourceCompatibility = 1.8
 version = project.property('versionString') + '_build' + project.property('buildNumber')
 
-def solrVersion = '7.5.0'
+def solrVersion = '8.5.1'
 
 repositories {
     mavenLocal()
