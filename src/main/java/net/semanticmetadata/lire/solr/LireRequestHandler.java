@@ -557,7 +557,7 @@ public class LireRequestHandler extends RequestHandlerBase {
             docIterator = docList.iterator();
         } else {
             TopDocs docs = searcher.search(query, numberOfCandidateResults);
-            numberOfResults = docs.totalHits;
+            numberOfResults = docs.totalHits.value;
             docIterator = new TopDocsIterator(docs);
         }
         time = System.currentTimeMillis() - time;
